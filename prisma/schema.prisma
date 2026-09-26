@@ -1,0 +1,298 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ---------- Catalogue ----------
+
+model Category {
+  id       String    @id @default(cuid())
+  slug     String    @unique
+  name     String
+  hindi    String
+  blurb    String
+  pack     String // pack-shot style used for the tile
+  tint     String // hex used behind the tile
+  sort     Int       @default(0)
+  products Product[]
+}
+
+model Product {
+  id          String    @id @default(cuid())
+  slug        String    @unique
+  name        String
+  hindi       String    @default("")
+  tagline     String
+  description String
+  categoryId  String
+  category    Category  @relation(fields: [categoryId], references: [id])
+  delivery    String // FRESH = Tricity morning delivery, SHIP = pan-India courier
+  subscribable Boolean  @default(false)
+  pack        String // jar | bottle | kulhad | matka | oil | honey | tin
+  liquid      String // hex colour of the product inside the glass
+  label       String    @default("#1c1a15")
+  image       String? // optional uploaded photo that replaces the pack shot
+  video       String? // optional product video
+  gallery     String    @default("[]") // JSON array of lifestyle image paths
+  highlights  String    @default("[]") // JSON array of short strings
+  ingredients String    @default("")
+  shelfLife   String    @default("")
+  storage     String    @default("")
+  badge       String?
+  rating      Float     @default(4.8)
+  ratingCount Int       @default(0)
+  active      Boolean   @default(true)
+  featured    Boolean   @default(false)
+  sort        Int       @default(0)
+  createdAt   DateTime  @default(now())
+  variants    Variant[]
+  reviews     Review[]
+  batches     Batch[]
+}
+
+model Variant {
+  id            String         @id @default(cuid())
+  productId     String
+  product       Product        @relation(fields: [productId], references: [id], onDelete: Cascade)
+  label         String // "500 ml", "1 L"
+  price         Int // rupees
+  mrp           Int
+  subPrice      Int? // subscriber price per unit
+  stock         Int            @default(100)
+  sku           String         @unique
+  sort          Int            @default(0)
+  orderItems    OrderItem[]
+  subscriptions Subscription[]
+  deliveries    Delivery[]
+}
+
+model Review {
+  id        String   @id @default(cuid())
+  productId String?
+  product   Product? @relation(fields: [productId], references: [id], onDelete: Cascade)
+  name      String
+  city      String
+  rating    Int
+  body      String
+  approved  Boolean  @default(false)
+  featured  Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+model Batch {
+  id         String   @id @default(cuid())
+  code       String   @unique
+  productId  String
+  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  milkedOn   DateTime?
+  madeOn     DateTime
+  quantity   String
+  fat        String?
+  moisture   String?
+  lab        String   @default("")
+  reportUrl  String?
+  result     String   @default("PASS")
+  notes      String   @default("")
+  createdAt  DateTime @default(now())
+}
+
+// ---------- Content ----------
+
+model MakingStory {
+  id       String  @id @default(cuid())
+  key      String  @unique
+  title    String
+  hindi    String  @default("")
+  intro    String
+  video    String
+  poster   String
+  steps    String // JSON [{ at: seconds, title, body }]
+  sort     Int     @default(0)
+  active   Boolean @default(true)
+}
+
+model Popup {
+  id        String   @id @default(cuid())
+  kind      String // PRODUCTION | REVIEW | INFO
+  badge     String // short text inside the square icon
+  title     String
+  subtitle  String
+  active    Boolean  @default(true)
+  sort      Int      @default(0)
+  createdAt DateTime @default(now())
+}
+
+model Setting {
+  key   String @id
+  value String
+}
+
+model Pincode {
+  code   String  @id
+  area   String
+  city   String
+  active Boolean @default(true)
+}
+
+model Coupon {
+  id        String   @id @default(cuid())
+  code      String   @unique
+  kind      String // PERCENT | FLAT
+  value     Int
+  minOrder  Int      @default(0)
+  note      String   @default("")
+  active    Boolean  @default(true)
+  uses      Int      @default(0)
+  createdAt DateTime @default(now())
+}
+
+// ---------- Customers ----------
+
+model User {
+  id            String         @id @default(cuid())
+  phone         String         @unique
+  name          String         @default("")
+  email         String         @default("")
+  wallet        Int            @default(0)
+  bottlesOut    Int            @default(0)
+  createdAt     DateTime       @default(now())
+  addresses     Address[]
+  orders        Order[]
+  subscriptions Subscription[]
+  walletTxns    WalletTxn[]
+  deliveries    Delivery[]
+}
+
+model Address {
+  id            String         @id @default(cuid())
+  userId        String
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  label         String         @default("Home")
+  name          String
+  line1         String
+  line2         String         @default("")
+  landmark      String         @default("")
+  city          String
+  state         String         @default("")
+  pincode       String
+  createdAt     DateTime       @default(now())
+  subscriptions Subscription[]
+}
+
+model OtpCode {
+  id        String   @id @default(cuid())
+  phone     String
+  code      String
+  expiresAt DateTime
+  used      Boolean  @default(false)
+}
+
+model Order {
+  id            String      @id @default(cuid())
+  number        String      @unique
+  userId        String
+  user          User        @relation(fields: [userId], references: [id])
+  status        String      @default("PLACED") // PLACED CONFIRMED PACKED SHIPPED OUT_FOR_DELIVERY DELIVERED CANCELLED
+  payment       String // RAZORPAY | COD | WALLET
+  paymentStatus String      @default("PENDING") // PENDING PAID FAILED REFUNDED
+  razorpayOrder String?
+  razorpayPay   String?
+  subtotal      Int
+  deliveryFee   Int
+  discount      Int         @default(0)
+  total         Int
+  coupon        String?
+  address       String // JSON snapshot
+  slot          String      @default("")
+  deliverOn     String? // YYYY-MM-DD for Tricity rider deliveries
+  note          String      @default("")
+  createdAt     DateTime    @default(now())
+  items         OrderItem[]
+}
+
+model OrderItem {
+  id        String  @id @default(cuid())
+  orderId   String
+  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  variantId String
+  variant   Variant @relation(fields: [variantId], references: [id])
+  name      String
+  label     String
+  price     Int
+  qty       Int
+}
+
+model Subscription {
+  id        String     @id @default(cuid())
+  userId    String
+  user      User       @relation(fields: [userId], references: [id])
+  variantId String
+  variant   Variant    @relation(fields: [variantId], references: [id])
+  addressId String
+  address   Address    @relation(fields: [addressId], references: [id])
+  pattern   String // DAILY | ALTERNATE | CUSTOM
+  weekQty   String // JSON [sun..sat] quantities, used when pattern = CUSTOM
+  qty       Int        @default(1) // used for DAILY / ALTERNATE
+  startDate String // YYYY-MM-DD
+  slot      String     @default("6–8 AM")
+  status    String     @default("ACTIVE") // ACTIVE | PAUSED | CANCELLED
+  pauseFrom String?
+  pauseTo   String?
+  createdAt DateTime   @default(now())
+  overrides DayOverride[]
+  deliveries Delivery[]
+}
+
+model DayOverride {
+  id             String       @id @default(cuid())
+  subscriptionId String
+  subscription   Subscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+  date           String // YYYY-MM-DD
+  qty            Int // 0 = skip
+
+  @@unique([subscriptionId, date])
+}
+
+model Delivery {
+  id             String        @id @default(cuid())
+  date           String
+  userId         String
+  user           User          @relation(fields: [userId], references: [id])
+  subscriptionId String?
+  subscription   Subscription? @relation(fields: [subscriptionId], references: [id])
+  variantId      String
+  variant        Variant       @relation(fields: [variantId], references: [id])
+  qty            Int
+  amount         Int
+  status         String        @default("SCHEDULED") // SCHEDULED | DELIVERED | MISSED
+  deliveredAt    DateTime?
+  createdAt      DateTime      @default(now())
+
+  @@unique([subscriptionId, date])
+}
+
+model WalletTxn {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  amount    Int // positive = credit
+  kind      String // TOPUP | DEBIT | REFUND | CREDIT | DEPOSIT
+  note      String
+  balance   Int
+  createdAt DateTime @default(now())
+}
+
+// ---------- Staff ----------
+
+model Admin {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String
+  password  String
+  role      String   @default("SUPER") // SUPER | OPS | CONTENT
+  createdAt DateTime @default(now())
+}
