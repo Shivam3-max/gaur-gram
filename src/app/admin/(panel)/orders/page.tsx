@@ -14,7 +14,7 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
   const where: Prisma.OrderWhereInput = {};
   if (s === "open") where.status = { in: ["PLACED", "CONFIRMED", "PACKED", "SHIPPED", "OUT_FOR_DELIVERY"] };
   else if (s) where.status = s;
-  if (q) where.OR = [{ number: { contains: q.toUpperCase() } }, { user: { phone: { contains: q } } }, { user: { name: { contains: q } } }];
+  if (q) where.OR = [{ number: { contains: q.toUpperCase() } }, { user: { phone: { contains: q, mode: "insensitive" } } }, { user: { name: { contains: q, mode: "insensitive" } } }];
   const orders = await db.order.findMany({ where, include: { user: true, items: true }, orderBy: { createdAt: "desc" }, take: 100 });
 
   return (

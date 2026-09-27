@@ -3,20 +3,43 @@
 Premium D2C store for Gaurgram: bilona ghee, fresh milk, dahi, lassi, kheer, raw honey and cold-pressed oils,
 straight from the goshala. Next.js 16 (App Router) · React 19 · Tailwind CSS 4 · Prisma + SQLite · Framer Motion.
 
-## Run it
+## Run it locally
+
+The site uses PostgreSQL. Prisma ships a local Postgres, so nothing else needs installing:
 
 ```bash
 npm install
+cp .env.example .env
+npx prisma dev --name gaurgram --detach   # prints a postgres:// URL; put it in .env as DATABASE_URL
+                                          # (append &pgbouncer=true&connection_limit=1 for this local server)
 npx prisma db push
 npm run db:seed
 npm run dev          # http://localhost:3740
 ```
 
+After a restart, bring the database back with `npx prisma dev start gaurgram`.
+
 - Store: http://localhost:3740
-- Admin: http://localhost:3740/admin: sign in as `admin@gaurgram.in` with the password from `SEED_ADMIN_PASSWORD` in `.env` (copy `.env.example` to `.env` first). Change it in Admin → Site settings.
+- Admin: http://localhost:3740/admin: sign in as `admin@gaurgram.in` with the password from `SEED_ADMIN_PASSWORD` in `.env`. Change it in Admin → Site settings.
 - Demo customer: phone `9876500001`. While no SMS provider is connected, the OTP is shown on screen.
 
 `npm run db:reset` wipes the database and reseeds demo data.
+
+## Deploying to Vercel
+
+1. Import the GitHub repo in Vercel (framework: Next.js, default settings).
+2. **Database:** Project → Storage → Create Database → **Neon** (Postgres, free tier) → connect it to the project.
+   This sets `DATABASE_URL` automatically.
+3. **Uploads:** Project → Storage → Create → **Blob** → connect it. This sets `BLOB_READ_WRITE_TOKEN`, so admin
+   uploads (photos, making videos, lab PDFs) go to Vercel Blob instead of the server's disk.
+4. Project → Settings → Environment Variables, add:
+   - `SESSION_SECRET`: a long random string
+   - `SEED_ADMIN_PASSWORD`: the admin password to create on the first deploy
+   - `SITE_URL`: your live address, e.g. `https://gaurgram.in`
+   - `RAZORPAY_KEY_ID` and `RAZORPAY_KEY_SECRET` when you're ready to take real payments
+5. Redeploy. The build creates the tables and loads the catalogue, delivery zones, making videos and admin account
+   into the empty database (no demo customers or orders). Later deploys never overwrite your data; a schema
+   change that would delete data stops the deploy instead.
 
 ## What's inside
 

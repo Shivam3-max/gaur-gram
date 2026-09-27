@@ -8,6 +8,9 @@ import LivePopups from "@/components/LivePopups";
 import { getSettings, num } from "@/lib/settings";
 import { db } from "@/lib/db";
 
+// Prices, stock and site settings change from the admin panel, so every storefront page renders per request.
+export const dynamic = "force-dynamic";
+
 export default async function ShopLayout({ children }: { children: React.ReactNode }) {
   const s = await getSettings();
   const popups = await db.popup.findMany({

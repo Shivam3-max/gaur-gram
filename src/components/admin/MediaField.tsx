@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import { Upload, X, Film, FileText } from "lucide-react";
+import { uploadFile } from "./uploadFile";
 
 /** Text field for a media URL with an upload button. Uploaded files are stored on the server under /uploads. */
 export default function MediaField({ name, defaultValue = "", accept = "image/*", placeholder }: { name: string; defaultValue?: string | null; accept?: string; placeholder?: string }) {
@@ -16,12 +17,7 @@ export default function MediaField({ name, defaultValue = "", accept = "image/*"
     setErr("");
     setBusy(true);
     try {
-      const body = new FormData();
-      body.append("file", f);
-      const r = await fetch("/api/admin/upload", { method: "POST", body });
-      const d = await r.json();
-      if (!r.ok) throw new Error(d.error || "Upload failed");
-      setValue(d.url);
+      setValue(await uploadFile(f));
     } catch (e) {
       setErr(e instanceof Error ? e.message : "Upload failed");
     } finally {

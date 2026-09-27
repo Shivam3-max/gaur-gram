@@ -334,6 +334,14 @@ const pincodes: [string, string, string][] = [
 ];
 
 async function main() {
+  // On deploys this runs with SEED_ONLY_IF_EMPTY=1 so a live database is never wiped.
+  if (process.env.SEED_ONLY_IF_EMPTY === "1" && (await db.category.count()) > 0) {
+    console.log("Database already has a catalogue, skipping seed.");
+    return;
+  }
+  // Demo customers, orders and subscriptions are for local development only.
+  const withDemo = process.env.SEED_DEMO_DATA !== "0";
+
   // Clean slate (order matters for relations)
   await db.walletTxn.deleteMany();
   await db.delivery.deleteMany();
@@ -444,92 +452,96 @@ async function main() {
     data: { email: "admin@gaurgram.in", name: "Gaurgram Admin", role: "SUPER", password: await bcrypt.hash(adminPassword, 10) },
   });
 
-  // Demo customer with a live milk subscription
-  const user = await db.user.create({
-    data: { phone: "9876500001", name: "Demo Customer", email: "demo@example.com", wallet: 0, bottlesOut: 4 },
-  });
-  const addr = await db.address.create({
-    data: { userId: user.id, label: "Home", name: "Demo Customer", line1: "House 1234, Sector 70", landmark: "Near community centre", city: "Mohali", state: "Punjab", pincode: "160062" },
-  });
-  let bal = 0;
-  const txn = async (amount: number, kind: string, note: string, daysAgo: number) => {
-    bal += amount;
-    await db.walletTxn.create({ data: { userId: user.id, amount, kind, note, balance: bal, createdAt: new Date(Date.now() - daysAgo * 86400000) } });
-  };
-  await txn(3000, "TOPUP", "UPI top-up", 14);
-  await txn(-200, "DEPOSIT", "Bottle deposit (4 bottles)", 14);
+  let orderNumber = "none";
+  if (withDemo) {
+    // Demo customer with a live milk subscription
+    const user = await db.user.create({
+      data: { phone: "9876500001", name: "Demo Customer", email: "demo@example.com", wallet: 0, bottlesOut: 4 },
+    });
+    const addr = await db.address.create({
+      data: { userId: user.id, label: "Home", name: "Demo Customer", line1: "House 1234, Sector 70", landmark: "Near community centre", city: "Mohali", state: "Punjab", pincode: "160062" },
+    });
+    let bal = 0;
+    const txn = async (amount: number, kind: string, note: string, daysAgo: number) => {
+      bal += amount;
+      await db.walletTxn.create({ data: { userId: user.id, amount, kind, note, balance: bal, createdAt: new Date(Date.now() - daysAgo * 86400000) } });
+    };
+    await txn(3000, "TOPUP", "UPI top-up", 14);
+    await txn(-200, "DEPOSIT", "Bottle deposit (4 bottles)", 14);
 
-  const milk = await db.subscription.create({
-    data: {
-      userId: user.id, variantId: variantBySku["desi-cow-milk-1l"], addressId: addr.id, pattern: "CUSTOM",
-      weekQty: JSON.stringify([2, 1, 1, 1, 1, 1, 2]), qty: 1, startDate: addDays(t, -13), slot: "6–8 AM",
-    },
-  });
-  const dahi = await db.subscription.create({
-    data: {
-      userId: user.id, variantId: variantBySku["matka-dahi-400g"], addressId: addr.id, pattern: "ALTERNATE",
-      weekQty: "[0,0,0,0,0,0,0]", qty: 1, startDate: addDays(t, -12), slot: "6–8 AM",
-    },
-  });
+    const milk = await db.subscription.create({
+      data: {
+        userId: user.id, variantId: variantBySku["desi-cow-milk-1l"], addressId: addr.id, pattern: "CUSTOM",
+        weekQty: JSON.stringify([2, 1, 1, 1, 1, 1, 2]), qty: 1, startDate: addDays(t, -13), slot: "6–8 AM",
+      },
+    });
+    const dahi = await db.subscription.create({
+      data: {
+        userId: user.id, variantId: variantBySku["matka-dahi-400g"], addressId: addr.id, pattern: "ALTERNATE",
+        weekQty: "[0,0,0,0,0,0,0]", qty: 1, startDate: addDays(t, -12), slot: "6–8 AM",
+      },
+    });
 
-  // Past deliveries
-  for (let d = -13; d <= -1; d++) {
-    const date = addDays(t, d);
-    const dow = new Date(date + "T00:00:00Z").getUTCDay();
-    const mq = [2, 1, 1, 1, 1, 1, 2][dow];
-    await db.delivery.create({ data: { date, userId: user.id, subscriptionId: milk.id, variantId: milk.variantId, qty: mq, amount: mq * 92, status: "DELIVERED", deliveredAt: new Date(date + "T06:40:00+05:30") } });
-    await txn(-mq * 92, "DEBIT", `Desi Cow Milk 1 L × ${mq} · ${date}`, -d);
-    if ((d + 12) % 2 === 0) {
-      await db.delivery.create({ data: { date, userId: user.id, subscriptionId: dahi.id, variantId: dahi.variantId, qty: 1, amount: 80, status: "DELIVERED", deliveredAt: new Date(date + "T06:45:00+05:30") } });
-      await txn(-80, "DEBIT", `Matka Dahi 400 g · ${date}`, -d);
+    // Past deliveries
+    for (let d = -13; d <= -1; d++) {
+      const date = addDays(t, d);
+      const dow = new Date(date + "T00:00:00Z").getUTCDay();
+      const mq = [2, 1, 1, 1, 1, 1, 2][dow];
+      await db.delivery.create({ data: { date, userId: user.id, subscriptionId: milk.id, variantId: milk.variantId, qty: mq, amount: mq * 92, status: "DELIVERED", deliveredAt: new Date(date + "T06:40:00+05:30") } });
+      await txn(-mq * 92, "DEBIT", `Desi Cow Milk 1 L × ${mq} · ${date}`, -d);
+      if ((d + 12) % 2 === 0) {
+        await db.delivery.create({ data: { date, userId: user.id, subscriptionId: dahi.id, variantId: dahi.variantId, qty: 1, amount: 80, status: "DELIVERED", deliveredAt: new Date(date + "T06:45:00+05:30") } });
+        await txn(-80, "DEBIT", `Matka Dahi 400 g · ${date}`, -d);
+      }
     }
-  }
-  await db.user.update({ where: { id: user.id }, data: { wallet: bal } });
-  await db.dayOverride.create({ data: { subscriptionId: milk.id, date: addDays(t, 3), qty: 0 } });
+    await db.user.update({ where: { id: user.id }, data: { wallet: bal } });
+    await db.dayOverride.create({ data: { subscriptionId: milk.id, date: addDays(t, 3), qty: 0 } });
 
-  const order = await db.order.create({
-    data: {
-      number: "GG" + t.replaceAll("-", "").slice(2) + "001", userId: user.id, status: "SHIPPED", payment: "RAZORPAY", paymentStatus: "PAID",
-      subtotal: 1739, deliveryFee: 0, total: 1739, address: JSON.stringify(addr), slot: "Courier · 3–5 days",
-      createdAt: new Date(Date.now() - 3 * 86400000),
-      items: {
-        create: [
-          { variantId: variantBySku["desi-cow-bilona-ghee-500ml"], name: "Desi Cow Bilona Ghee", label: "500 ml", price: 1190, qty: 1 },
-          { variantId: variantBySku["wild-forest-honey-500g"], name: "Wild Forest Honey", label: "500 g", price: 549, qty: 1 },
-        ],
-      },
-    },
-  });
-
-  // A few more customers and orders so the admin dashboard has life
-  const names = ["Simran Kaur", "Rahul Verma", "Ananya Gupta", "Harjeet Singh", "Meera Nair", "Karan Malhotra"];
-  const pins = ["160035", "134112", "140603", "160059", "160022", "134109"];
-  for (const [i, name] of names.entries()) {
-    const u = await db.user.create({ data: { phone: `98765000${10 + i}`, name, wallet: 400 + i * 150 } });
-    const a = await db.address.create({ data: { userId: u.id, name, line1: `House ${200 + i * 37}`, city: pincodes.find((p) => p[0] === pins[i])?.[2] ?? "Chandigarh", pincode: pins[i] } });
-    await db.subscription.create({
+    const order = await db.order.create({
       data: {
-        userId: u.id, variantId: variantBySku[i % 2 ? "desi-cow-milk-500ml" : "buffalo-milk-1l"], addressId: a.id,
-        pattern: i % 3 === 0 ? "DAILY" : i % 3 === 1 ? "ALTERNATE" : "CUSTOM", qty: 1 + (i % 2),
-        weekQty: JSON.stringify([1, 1, 0, 1, 0, 1, 2]), startDate: addDays(t, -5 - i), slot: i % 2 ? "5–7 AM" : "6–8 AM",
-        status: i === 4 ? "PAUSED" : "ACTIVE",
+        number: "GG" + t.replaceAll("-", "").slice(2) + "001", userId: user.id, status: "SHIPPED", payment: "RAZORPAY", paymentStatus: "PAID",
+        subtotal: 1739, deliveryFee: 0, total: 1739, address: JSON.stringify(addr), slot: "Courier · 3–5 days",
+        createdAt: new Date(Date.now() - 3 * 86400000),
+        items: {
+          create: [
+            { variantId: variantBySku["desi-cow-bilona-ghee-500ml"], name: "Desi Cow Bilona Ghee", label: "500 ml", price: 1190, qty: 1 },
+            { variantId: variantBySku["wild-forest-honey-500g"], name: "Wild Forest Honey", label: "500 g", price: 549, qty: 1 },
+          ],
+        },
       },
     });
-    if (i % 2 === 0)
-      await db.subscription.create({ data: { userId: u.id, variantId: variantBySku["meethi-lassi-300ml"], addressId: a.id, pattern: "DAILY", qty: 1, weekQty: "[0,0,0,0,0,0,0]", startDate: addDays(t, -3) } });
-    await db.order.create({
-      data: {
-        number: "GG" + t.replaceAll("-", "").slice(2) + String(2 + i).padStart(3, "0"), userId: u.id,
-        status: ["PLACED", "CONFIRMED", "PACKED", "DELIVERED", "OUT_FOR_DELIVERY", "PLACED"][i],
-        payment: i % 3 === 0 ? "COD" : "RAZORPAY", paymentStatus: i % 3 === 0 ? "PENDING" : "PAID",
-        subtotal: 650 + i * 120, deliveryFee: 0, total: 650 + i * 120, address: JSON.stringify(a),
-        slot: "Tomorrow · 6–8 AM", createdAt: new Date(Date.now() - i * 5 * 3600000),
-        items: { create: [{ variantId: variantBySku["desi-cow-bilona-ghee-250ml"], name: "Desi Cow Bilona Ghee", label: "250 ml", price: 650, qty: 1 }] },
-      },
-    });
+
+    // A few more customers and orders so the admin dashboard has life
+    const names = ["Simran Kaur", "Rahul Verma", "Ananya Gupta", "Harjeet Singh", "Meera Nair", "Karan Malhotra"];
+    const pins = ["160035", "134112", "140603", "160059", "160022", "134109"];
+    for (const [i, name] of names.entries()) {
+      const u = await db.user.create({ data: { phone: `98765000${10 + i}`, name, wallet: 400 + i * 150 } });
+      const a = await db.address.create({ data: { userId: u.id, name, line1: `House ${200 + i * 37}`, city: pincodes.find((p) => p[0] === pins[i])?.[2] ?? "Chandigarh", pincode: pins[i] } });
+      await db.subscription.create({
+        data: {
+          userId: u.id, variantId: variantBySku[i % 2 ? "desi-cow-milk-500ml" : "buffalo-milk-1l"], addressId: a.id,
+          pattern: i % 3 === 0 ? "DAILY" : i % 3 === 1 ? "ALTERNATE" : "CUSTOM", qty: 1 + (i % 2),
+          weekQty: JSON.stringify([1, 1, 0, 1, 0, 1, 2]), startDate: addDays(t, -5 - i), slot: i % 2 ? "5–7 AM" : "6–8 AM",
+          status: i === 4 ? "PAUSED" : "ACTIVE",
+        },
+      });
+      if (i % 2 === 0)
+        await db.subscription.create({ data: { userId: u.id, variantId: variantBySku["meethi-lassi-300ml"], addressId: a.id, pattern: "DAILY", qty: 1, weekQty: "[0,0,0,0,0,0,0]", startDate: addDays(t, -3) } });
+      await db.order.create({
+        data: {
+          number: "GG" + t.replaceAll("-", "").slice(2) + String(2 + i).padStart(3, "0"), userId: u.id,
+          status: ["PLACED", "CONFIRMED", "PACKED", "DELIVERED", "OUT_FOR_DELIVERY", "PLACED"][i],
+          payment: i % 3 === 0 ? "COD" : "RAZORPAY", paymentStatus: i % 3 === 0 ? "PENDING" : "PAID",
+          subtotal: 650 + i * 120, deliveryFee: 0, total: 650 + i * 120, address: JSON.stringify(a),
+          slot: "Tomorrow · 6–8 AM", createdAt: new Date(Date.now() - i * 5 * 3600000),
+          items: { create: [{ variantId: variantBySku["desi-cow-bilona-ghee-250ml"], name: "Desi Cow Bilona Ghee", label: "250 ml", price: 650, qty: 1 }] },
+        },
+      });
+    }
+    orderNumber = order.number;
   }
 
-  console.log("Seeded", products.length, "products,", pincodes.length, "pincodes, order", order.number);
+  console.log("Seeded", products.length, "products,", pincodes.length, "pincodes", withDemo ? `and demo data (order ${orderNumber})` : "without demo customers");
 }
 
 main().finally(() => db.$disconnect());

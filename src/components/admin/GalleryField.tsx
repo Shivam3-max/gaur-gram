@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import { Upload, X, ArrowLeft, ArrowRight } from "lucide-react";
+import { uploadFile } from "./uploadFile";
 
 /** Ordered list of lifestyle images for a product. Submits as newline-separated paths. */
 export default function GalleryField({ name, defaultValue }: { name: string; defaultValue: string[] }) {
@@ -15,12 +16,8 @@ export default function GalleryField({ name, defaultValue }: { name: string; def
     setBusy(true);
     try {
       for (const f of Array.from(files)) {
-        const body = new FormData();
-        body.append("file", f);
-        const r = await fetch("/api/admin/upload", { method: "POST", body });
-        const d = await r.json();
-        if (!r.ok) throw new Error(d.error || "Upload failed");
-        setItems((p) => [...p, d.url]);
+        const url = await uploadFile(f);
+        setItems((p) => [...p, url]);
       }
     } catch (e) {
       setErr(e instanceof Error ? e.message : "Upload failed");

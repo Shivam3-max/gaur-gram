@@ -77,10 +77,10 @@ export async function getProducts(opts: { category?: string; q?: string; feature
   if (opts.delivery) where.delivery = opts.delivery;
   if (opts.q) {
     where.OR = [
-      { name: { contains: opts.q } },
-      { tagline: { contains: opts.q } },
-      { hindi: { contains: opts.q } },
-      { category: { name: { contains: opts.q } } },
+      { name: { contains: opts.q, mode: "insensitive" } },
+      { tagline: { contains: opts.q, mode: "insensitive" } },
+      { hindi: { contains: opts.q, mode: "insensitive" } },
+      { category: { name: { contains: opts.q, mode: "insensitive" } } },
     ];
   }
   const rows = await db.product.findMany({ where, include: withRelations, orderBy: { sort: "asc" } });

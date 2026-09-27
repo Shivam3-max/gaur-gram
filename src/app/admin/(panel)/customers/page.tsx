@@ -8,7 +8,7 @@ export const metadata = { title: "Customers" };
 export default async function CustomersPage({ searchParams }: { searchParams: Promise<{ q?: string }> }) {
   const { q = "" } = await searchParams;
   const users = await db.user.findMany({
-    where: q ? { OR: [{ name: { contains: q } }, { phone: { contains: q } }, { email: { contains: q } }] } : {},
+    where: q ? { OR: [{ name: { contains: q, mode: "insensitive" } }, { phone: { contains: q, mode: "insensitive" } }, { email: { contains: q, mode: "insensitive" } }] } : {},
     include: { _count: { select: { orders: true } }, subscriptions: { where: { status: "ACTIVE" }, select: { id: true } }, addresses: { take: 1, orderBy: { createdAt: "desc" } } },
     orderBy: { createdAt: "desc" },
     take: 200,

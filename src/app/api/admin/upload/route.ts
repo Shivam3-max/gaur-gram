@@ -17,7 +17,13 @@ const MAX = 80 * 1024 * 1024;
 
 const UPLOAD_DIR = path.join(process.cwd(), "uploads");
 
-/** Stores images, videos and lab-report PDFs uploaded from the admin panel. Served from /uploads/…. */
+/** Tells the admin panel where uploads go: Vercel Blob when configured, otherwise this server's disk. */
+export async function GET() {
+  if (!(await currentAdmin())) return NextResponse.json({ error: "Not signed in" }, { status: 401 });
+  return NextResponse.json({ blob: Boolean(process.env.BLOB_READ_WRITE_TOKEN) });
+}
+
+/** Local/self-hosted uploads: stores images, videos and lab-report PDFs on disk, served from /uploads/…. */
 export async function POST(req: Request) {
   if (!(await currentAdmin())) return NextResponse.json({ error: "Not signed in" }, { status: 401 });
   const form = await req.formData();
