@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { adminPage } from "@/lib/auth";
 import { notFound } from "next/navigation";
 import { ArrowLeft, ExternalLink } from "lucide-react";
 import { db } from "@/lib/db";
@@ -13,6 +14,7 @@ export const metadata = { title: "Edit product" };
 const PACKS = [["jar", "Glass jar (ghee, makhan, paneer)"], ["bottle", "Glass milk bottle"], ["oil", "Tall oil bottle"], ["honey", "Honey jar with cloth cap"], ["kulhad", "Clay kulhad"], ["matka", "Clay matka"]];
 
 export default async function EditProduct({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ saved?: string }> }) {
+  await adminPage("products");
   const { id } = await params;
   const { saved } = await searchParams;
   const isNew = id === "new";
@@ -70,10 +72,11 @@ export default async function EditProduct({ params, searchParams }: { params: Pr
           </Card>
 
           <Card title="Details">
-            <div className="grid gap-4 sm:grid-cols-3">
+            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
               <Field label="Ingredients"><input name="ingredients" defaultValue={p?.ingredients} className={input} /></Field>
               <Field label="Shelf life"><input name="shelfLife" defaultValue={p?.shelfLife} className={input} /></Field>
               <Field label="Storage"><input name="storage" defaultValue={p?.storage} className={input} /></Field>
+              <Field label="GST rate %" hint="Included in the price. Confirm with your CA."><input name="gstRate" type="number" min={0} max={28} defaultValue={p?.gstRate ?? 5} className={input} /></Field>
             </div>
           </Card>
         </div>

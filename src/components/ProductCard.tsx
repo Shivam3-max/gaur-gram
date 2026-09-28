@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { Star, Truck, Sunrise } from "lucide-react";
+import { Star } from "lucide-react";
+import { Sunrise, Truck } from "./folk/icons";
 import type { CardProduct } from "@/lib/catalog";
 import { cx, pct, rupees } from "@/lib/format";
 import ProductVisual from "./ProductVisual";
@@ -32,7 +33,7 @@ export default function ProductCard({ p, tint, className }: { p: CardProduct; ti
 
       <div className="flex flex-1 flex-col gap-1 px-1 pb-1 pt-2.5">
         <span className="flex items-center gap-1.5 text-[11px] font-medium text-ink-3">
-          {p.delivery === "FRESH" ? <Sunrise size={13} className="text-ghee" /> : <Truck size={13} className="text-tulsi" />}
+          {p.delivery === "FRESH" ? <Sunrise size={14} className="text-ghee" /> : <Truck size={14} className="text-tulsi" />}
           {p.delivery === "FRESH" ? "Tomorrow 6–8 AM · Tricity" : "Ships across India"}
         </span>
         <Link href={`/product/${p.slug}`} className="line-clamp-2 text-[14.5px] font-semibold leading-snug text-ink hover:text-ghee-deep">

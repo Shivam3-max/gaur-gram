@@ -29,9 +29,15 @@ export function isPaused(sub: SubLike, date: string) {
   return date >= sub.pauseFrom && (!sub.pauseTo || date <= sub.pauseTo);
 }
 
-/** Final quantity delivered on a date. */
-export function qtyOn(sub: SubLike, date: string, overrides: OverrideMap = {}) {
+export type Holidays = ReadonlySet<string> | readonly string[];
+
+export const isHoliday = (date: string, holidays?: Holidays) =>
+  !!holidays && (Array.isArray(holidays) ? holidays.includes(date) : (holidays as ReadonlySet<string>).has(date));
+
+/** Final quantity delivered on a date. Delivery holidays always win. */
+export function qtyOn(sub: SubLike, date: string, overrides: OverrideMap = {}, holidays?: Holidays) {
   if (sub.status === "CANCELLED") return 0;
+  if (isHoliday(date, holidays)) return 0;
   if (isPaused(sub, date)) return 0;
   if (date in overrides) return overrides[date];
   return planQty(sub, date);
@@ -53,6 +59,13 @@ export function isEditable(date: string, cutoffHour = 22) {
 export function firstEditableDate(cutoffHour = 22) {
   const now = istNow();
   return addDays(now.date, now.hour < cutoffHour ? 1 : 2);
+}
+
+/** The first date a one-time Tricity order can arrive, skipping delivery holidays. */
+export function nextDeliveryDate(cutoffHour = 22, holidays?: Holidays) {
+  let d = firstEditableDate(cutoffHour);
+  for (let i = 0; i < 14 && isHoliday(d, holidays); i++) d = addDays(d, 1);
+  return d;
 }
 
 export function describePattern(sub: Pick<SubLike, "pattern" | "qty" | "weekQty">) {

@@ -7,12 +7,16 @@ import Footer from "@/components/layout/Footer";
 import LivePopups from "@/components/LivePopups";
 import { getSettings, num } from "@/lib/settings";
 import { db } from "@/lib/db";
+import { liveBanners } from "@/lib/banners";
+import { FestivalToran } from "@/components/festival/Festival";
 
 // Prices, stock and site settings change from the admin panel, so every storefront page renders per request.
 export const dynamic = "force-dynamic";
 
 export default async function ShopLayout({ children }: { children: React.ReactNode }) {
   const s = await getSettings();
+  // A scheduled "top bar" banner replaces the everyday announcement while it's live
+  const bar = (await liveBanners()).find((b) => b.placement === "BAR");
   const popups = await db.popup.findMany({
     where: { active: true },
     orderBy: { sort: "asc" },
@@ -26,7 +30,8 @@ export default async function ShopLayout({ children }: { children: React.ReactNo
   };
   return (
     <CartProvider>
-      <Header announcement={s.announcement} />
+      <Header announcement={bar ? [bar.title, bar.subtitle].filter(Boolean).join(" · ") : s.announcement} announcementHref={bar?.href || undefined} />
+      <FestivalToran festival={s.festival} />
       <main>{children}</main>
       <Footer s={s} />
       <CartDrawer fees={fees} />

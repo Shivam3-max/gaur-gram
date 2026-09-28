@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Check, Plus, Sunrise, Truck, Wallet, CreditCard, Banknote, TicketPercent, Info } from "lucide-react";
+import { Check, Plus, CreditCard, Banknote, TicketPercent, Info } from "lucide-react";
+import { Sunrise, Truck, Potli } from "../folk/icons";
 import { useCart } from "../cart/CartProvider";
 import ProductVisual from "../ProductVisual";
 import AddressForm from "../account/AddressForm";
@@ -138,7 +139,7 @@ export default function CheckoutClient({ addresses: initial, wallet, userName, r
           <div className="mt-5 space-y-2.5">
             {[
               { k: "RAZORPAY" as const, icon: CreditCard, t: "UPI, cards & netbanking", d: razorpayLive ? "Secure payment by Razorpay" : "Razorpay demo mode: no money is charged" },
-              { k: "WALLET" as const, icon: Wallet, t: `Gaurgram wallet · ${rupees(wallet)}`, d: quote && wallet < quote.total ? "Balance too low for this order" : "Pay instantly from your balance", disabled: !quote || wallet < quote.total },
+              { k: "WALLET" as const, icon: Potli, t: `Gaurgram wallet · ${rupees(wallet)}`, d: quote && wallet < quote.total ? "Balance too low for this order" : "Pay instantly from your balance", disabled: !quote || wallet < quote.total },
               { k: "COD" as const, icon: Banknote, t: "Cash / UPI on delivery", d: "Pay when your order arrives" },
             ].map((o) => (
               <button

@@ -47,7 +47,7 @@ export default function Folk({ scene, className, h = "h-[110px]", label = false,
       <div className={h}>
         <SceneSvg scene={scene} className="block h-full w-auto" />
       </div>
-      {label && <span className="mt-1.5 block font-deva text-[12.5px] leading-none text-ghee/70">{s.hindi}</span>}
+      {label && <span className="mt-2 block font-deva text-[13.5px] leading-none text-ghee-deep">{s.hindi}</span>}
     </div>
   );
 }
@@ -75,7 +75,7 @@ export function Frieze({ scenes = PROCESS, className, labels = false, ground = t
       {labels && (
         <div className="mt-2 hidden justify-center gap-[2.5%] sm:flex">
           {scenes.map((k) => (
-            <span key={k} className="min-w-0 text-center font-deva text-[12.5px] leading-none text-ghee/70" style={{ flex: `${SCENES[k].w} 1 0` }}>
+            <span key={k} className="min-w-0 text-center font-deva text-[13.5px] leading-none text-ghee-deep" style={{ flex: `${SCENES[k].w} 1 0` }}>
               {SCENES[k].hindi}
             </span>
           ))}

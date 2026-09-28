@@ -1,4 +1,5 @@
 import { db } from "@/lib/db";
+import { adminPage } from "@/lib/auth";
 import { deletePopup, savePopup } from "../../actions";
 import { Card, Field, PageHead, btn, btnSm, input } from "@/components/admin/ui";
 
@@ -7,6 +8,7 @@ export const metadata = { title: "Live pop-ups" };
 const KINDS = [["PRODUCTION", "Live from the goshala"], ["REVIEW", "Verified review"], ["INFO", "Good to know"]];
 
 export default async function PopupsPage() {
+  await adminPage("popups");
   const popups = await db.popup.findMany({ orderBy: { sort: "asc" } });
   const row = (p?: (typeof popups)[number]) => (
     <form action={savePopup} className="grid items-end gap-2 md:grid-cols-[150px_80px_1.4fr_1.4fr_auto_auto] *:min-w-0">

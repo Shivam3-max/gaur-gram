@@ -1,7 +1,9 @@
 import Link from "next/link";
+import { adminPage } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { addDays, today as istToday } from "@/lib/dates";
 import { describePattern, qtyOn } from "@/lib/schedule";
+import { getHolidays } from "@/lib/holidays";
 import { cx, rupees } from "@/lib/format";
 import { adminSubscription } from "../../actions";
 import { Card, PageHead, Pill, Table, btnSm, td } from "@/components/admin/ui";
@@ -9,6 +11,7 @@ import { Card, PageHead, Pill, Table, btnSm, td } from "@/components/admin/ui";
 export const metadata = { title: "Subscriptions" };
 
 export default async function SubsPage({ searchParams }: { searchParams: Promise<{ s?: string }> }) {
+  await adminPage("subscriptions");
   const { s = "ACTIVE" } = await searchParams;
   const tomorrow = addDays(istToday(), 1);
   const subs = await db.subscription.findMany({
@@ -17,6 +20,7 @@ export default async function SubsPage({ searchParams }: { searchParams: Promise
     orderBy: { createdAt: "desc" },
   });
   const counts = await db.subscription.groupBy({ by: ["status"], _count: true });
+  const holidays = await getHolidays();
   const count = (k: string) => counts.find((c) => c.status === k)?._count ?? 0;
 
   return (
@@ -30,7 +34,7 @@ export default async function SubsPage({ searchParams }: { searchParams: Promise
       <Card pad={false}>
         <Table head={["Customer", "Product", "Plan", "Tomorrow", "Wallet", "Status", ""]} empty={subs.length ? undefined : "No subscriptions here."}>
           {subs.map((x) => {
-            const t = qtyOn(x, tomorrow, Object.fromEntries(x.overrides.map((o) => [o.date, o.qty])));
+            const t = qtyOn(x, tomorrow, Object.fromEntries(x.overrides.map((o) => [o.date, o.qty])), holidays.set);
             return (
               <tr key={x.id}>
                 <td className={td}><b className="font-semibold">{x.user.name || "Customer"}</b><span className="block text-[12px] text-ink-3">{x.user.phone} · {x.address.city} {x.address.pincode}</span></td>
@@ -42,6 +46,7 @@ export default async function SubsPage({ searchParams }: { searchParams: Promise
                 <td className={`${td} text-right`}>
                   {x.status !== "CANCELLED" && (
                     <form action={adminSubscription} className="inline-flex gap-1.5">
+                      <Link href={`/admin/subscriptions/${x.id}`} className={btnSm}>Edit</Link>
                       <input type="hidden" name="id" value={x.id} />
                       {x.status === "ACTIVE" ? <button name="action" value="pause" className={btnSm}>Pause</button> : <button name="action" value="resume" className={btnSm}>Resume</button>}
                       <button name="action" value="cancel" className={`${btnSm} text-clay`}>Cancel</button>

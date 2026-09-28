@@ -1,4 +1,5 @@
 import { db } from "@/lib/db";
+import { adminPage } from "@/lib/auth";
 import { parseJSON } from "@/lib/format";
 import { saveStory } from "../../actions";
 import MediaField from "@/components/admin/MediaField";
@@ -7,6 +8,7 @@ import { Card, Field, PageHead, btn, input } from "@/components/admin/ui";
 export const metadata = { title: "Making videos" };
 
 export default async function MakingAdmin() {
+  await adminPage("making");
   const stories = await db.makingStory.findMany({ orderBy: { sort: "asc" } });
   return (
     <>

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { adminPage } from "@/lib/auth";
 import { Plus } from "lucide-react";
 import { db } from "@/lib/db";
 import { labelTitle } from "@/lib/catalog";
@@ -10,6 +11,7 @@ import { Card, PageHead, Pill, Table, btn, btnSm, td } from "@/components/admin/
 export const metadata = { title: "Products" };
 
 export default async function ProductsPage() {
+  await adminPage("products");
   const products = await db.product.findMany({ include: { category: true, variants: { orderBy: { sort: "asc" } } }, orderBy: [{ category: { sort: "asc" } }, { sort: "asc" }] });
   return (
     <>

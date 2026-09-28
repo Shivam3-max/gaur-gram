@@ -1,9 +1,14 @@
+import { Fragment } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { ArrowRight, ArrowUpRight, Star, Recycle, FlaskConical, Sunrise, Truck, Milk, HandHeart, Leaf } from "lucide-react";
+import { ArrowRight, ArrowUpRight, Star } from "lucide-react";
+import { Sunrise, Truck, Bottle, Flask, MilkCan, Calendar, Moon, Trunk, Potli } from "@/components/folk/icons";
 import { db } from "@/lib/db";
 import { getCategories, getProducts, labelTitle } from "@/lib/catalog";
-import { getSettings } from "@/lib/settings";
+import { getSettings, homeSectionOrder, type HomeSectionKey } from "@/lib/settings";
+import { liveBanners } from "@/lib/banners";
+import PromoBanners from "@/components/home/PromoBanners";
+import { FestivalHero } from "@/components/festival/Festival";
 import { parseJSON } from "@/lib/format";
 import PackShot from "@/components/PackShot";
 import ProductCard from "@/components/ProductCard";
@@ -44,7 +49,7 @@ function SectionHead({ eyebrow, title, hindi, children, action, art }: { eyebrow
 }
 
 export default async function Home() {
-  const [s, categories, featured, shipped, storiesRaw, reviews, batch, milkOpts] = await Promise.all([
+  const [s, categories, featured, shipped, storiesRaw, reviews, batch, milkOpts, banners] = await Promise.all([
     getSettings(),
     getCategories(),
     getProducts({ featured: true }),
@@ -53,7 +58,10 @@ export default async function Home() {
     db.review.findMany({ where: { approved: true, featured: true }, include: { product: { select: { name: true, slug: true } } }, orderBy: { createdAt: "desc" }, take: 6 }),
     db.batch.findFirst({ orderBy: { madeOn: "desc" }, include: { product: { select: { name: true } } } }),
     db.product.findMany({ where: { subscribable: true, active: true }, include: { variants: { orderBy: { sort: "asc" } }, category: true }, orderBy: { sort: "asc" }, take: 6 }),
+    liveBanners(),
   ]);
+  const order = homeSectionOrder(s.homeSections);
+  const homeBanners = banners.filter((b) => b.placement === "HOME");
 
   const stories: Story[] = storiesRaw.map((x) => ({ ...x, steps: parseJSON(x.steps, []) }));
   const planner = milkOpts.map((p) => {
@@ -61,6 +69,289 @@ export default async function Home() {
     return { slug: p.slug, name: p.name, pack: p.pack, liquid: p.liquid, label: p.label, labelTitle: labelTitle(p.slug, p.category.hindi), unit: v.label, price: v.subPrice ?? v.price };
   });
   const tint = Object.fromEntries(categories.map((c) => [c.slug, c.tint]));
+
+  const sections: Record<HomeSectionKey, React.ReactNode> = {
+    categories: (
+      <>
+      <section className="container-x pt-14 sm:pt-20">
+        <SectionHead eyebrow="Shop by kitchen staple" title="Everything from the goshala" hindi="सब कुछ, सीधे गौशाला से" art="grazing" />
+        <div className="grid grid-cols-4 gap-x-2 gap-y-5 sm:gap-3 lg:grid-cols-8">
+          {categories.map((c, i) => (
+            <Reveal key={c.id} delay={i * 0.04}>
+              <Link href={`/shop?c=${c.slug}`} className="group flex flex-col items-center text-center">
+                <span className="arch-sm relative block aspect-[4/5] w-full overflow-hidden p-1.5 transition duration-500 group-hover:-translate-y-1 sm:p-4" style={{ background: c.tint }}>
+                  <PackShot pack={c.pack} liquid={c.slug === "honey" ? "#c9861b" : c.slug === "oils" ? "#d4a017" : c.slug === "ghee" ? "#e2a93b" : c.slug === "kheer" ? "#f5e7c4" : "#fbf8ef"} title={c.hindi} className="h-full w-full transition duration-500 group-hover:scale-105" />
+                </span>
+                <b className="mt-2 text-[11.5px] font-semibold leading-tight sm:mt-3 sm:text-[14.5px]">{c.name}</b>
+                <span className="hidden font-deva text-[13px] text-ghee sm:block">{c.hindi}</span>
+              </Link>
+            </Reveal>
+          ))}
+        </div>
+      </section>
+      </>
+    ),
+    bestsellers: (
+      <>
+      <section className="container-x pt-16 sm:pt-24">
+        <SectionHead
+          eyebrow="Bestsellers"
+          art="carry"
+          title={`Loved in ${s.families} kitchens`}
+          action={<Link href="/shop" className="inline-flex items-center gap-1.5 whitespace-nowrap text-[15px] font-semibold text-ghee-deep hover:gap-2.5">View all products <ArrowRight size={16} /></Link>}
+        />
+        <ProductRail label="Bestsellers">
+          {featured.map((p) => (
+            <ProductCard key={p.id} p={p} tint={tint[p.category.slug]} className="w-[200px] shrink-0 snap-start min-[400px]:w-[216px] lg:w-[236px]" />
+          ))}
+        </ProductRail>
+      </section>
+      </>
+    ),
+    making: (
+      <>
+      <section className="khadi relative mt-16 py-14 sm:mt-24 sm:py-20">
+        <Floaters items={[{ shape: "drop", className: "right-[6%] top-10 h-12 w-9", depth: 70 }, { shape: "comb", className: "left-[2%] bottom-16 h-16 w-16 hidden md:block", depth: 90 }]} />
+        <div className="container-x relative">
+          <SectionHead eyebrow="How we make it" title={<>Nothing hidden. <span className="text-ghee">Watch us make it.</span></>} hindi="हम कैसे बनाते हैं" art="bilona">
+            Every product has its own film, shot at our goshala and farms. Tap a step to jump to that moment.
+          </SectionHead>
+          <MakingShowcase stories={stories} />
+        </div>
+      </section>
+      </>
+    ),
+    timeline: (
+      <>
+      <section className="container-x pt-16 sm:pt-24">
+        <SectionHead eyebrow="Every morning" title="Three hours from our cows to your door" hindi="सुबह 4 बजे से 7 बजे तक" art="milking">
+          No distributor, no cold-storage warehouse, no repacking. The milk in your glass was in the udder before sunrise.
+        </SectionHead>
+        <div className="no-scrollbar -mx-5 flex snap-x scroll-px-5 snap-mandatory gap-4 overflow-x-auto px-5 pb-2 sm:mx-0 sm:grid sm:grid-cols-2 sm:gap-5 sm:overflow-visible sm:px-0 lg:grid-cols-4">
+          {[
+            { t: "4:00 AM", h: "Hand milking", d: "Cows are milked by hand after their first feed.", media: { video: "/videos/hand-milking.mp4", poster: "/videos/hand-milking.jpg" } },
+            { t: "4:40 AM", h: "Chilled in 30 minutes", d: "Cloth-filtered and chilled to 4°C, never boiled or homogenised.", media: { img: "/images/milk-pour-jar.jpg" } },
+            { t: "5:30 AM", h: "Filled in glass", d: "Sterilised bottles, dated caps, packed in insulated crates.", media: { img: "/images/milk-bottles-line.jpg" } },
+            { t: "7:00 AM", h: "At your door", d: "Our own riders across Chandigarh, Mohali, Panchkula, Zirakpur.", media: { img: "/images/milk-jar-cookies.jpg" } },
+          ].map((x, i) => (
+            <div key={x.t} className="w-[70%] shrink-0 snap-start sm:w-auto">
+              <div className="group">
+                <div className="arch relative aspect-[3/4] overflow-hidden bg-malai-2">
+                  {"video" in x.media ? (
+                    <AutoVideo src={x.media.video!} poster={x.media.poster} label={x.h} />
+                  ) : (
+                    <Image src={x.media.img!} alt={x.h} fill sizes="(min-width:1024px) 25vw, (min-width:640px) 50vw, 100vw" className="object-cover transition duration-700 group-hover:scale-105" />
+                  )}
+                  <span className="absolute left-1/2 top-6 -translate-x-1/2 rounded-full bg-white/90 px-3 py-1 text-[13px] font-bold tabular-nums backdrop-blur">{x.t}</span>
+                </div>
+                <div className="mt-4 flex gap-3">
+                  <span className="mt-1 grid h-6 w-6 shrink-0 place-items-center rounded-full bg-ghee text-[11px] font-bold text-white">{i + 1}</span>
+                  <div>
+                    <h3 className="text-[17px] font-semibold">{x.h}</h3>
+                    <p className="mt-1 text-[14px] leading-relaxed text-ink-3">{x.d}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+      </>
+    ),
+    subscribe: (
+      <>
+      <section className="relative mt-16 overflow-hidden sm:mt-24">
+        <div className="container-x grid items-center gap-10 lg:grid-cols-[0.9fr_1.1fr] *:min-w-0">
+          <Reveal>
+            <span className="eyebrow">Daily subscription</span>
+            <h2 className="mt-2 font-display text-[32px] leading-[1.03] min-[400px]:text-[36px] sm:text-[48px] 2xl:text-[54px]">Set it once. Fresh milk every morning.</h2>
+            <p className="mt-2 font-deva text-[20px] text-ghee">रोज़ सुबह, बिना झंझट</p>
+            <ul className="mt-6 space-y-3.5 text-[15px] text-ink-2">
+              {[
+                [Calendar, "Choose your days and quantity, even different amounts on weekends"],
+                [Moon, "Skip tomorrow or change it until 10 PM tonight"],
+                [Trunk, "Going away? Pause for as many days as you like"],
+                [Potli, "Pay from a prepaid wallet, only for what we deliver"],
+              ].map(([Icon, t]) => {
+                const I = Icon as typeof Sunrise;
+                return (
+                  <li key={t as string} className="flex items-start gap-3">
+                    <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-tulsi-soft text-tulsi"><I size={17} /></span>
+                    <span className="pt-1">{t as string}</span>
+                  </li>
+                );
+              })}
+            </ul>
+          </Reveal>
+          <Reveal delay={0.1}>
+            <MiniPlanner options={planner} />
+          </Reveal>
+        </div>
+        <div className="container-x mt-12">
+          <RideStrip />
+        </div>
+      </section>
+      </>
+    ),
+    glass: (
+      <>
+      <section className="container-x pt-16 sm:pt-24">
+        <div className="grid overflow-hidden rounded-[32px] bg-malai lg:grid-cols-2">
+          <div className="relative aspect-[16/11] sm:aspect-auto sm:min-h-[340px] lg:min-h-[520px]">
+            <Image src="/images/milk-bottles-line.jpg" alt="Glass milk bottles lined up at the goshala" fill sizes="(min-width:1024px) 50vw, 100vw" className="object-cover" />
+          </div>
+          <div className="relative flex flex-col justify-center p-6 sm:p-12 lg:p-16">
+            <div className="flex items-end justify-between gap-4">
+              <div>
+                <span className="eyebrow">Our packaging promise</span>
+                <h2 className="mt-2 font-display text-[32px] leading-[1.04] min-[400px]:text-[36px] sm:text-[46px] 2xl:text-[52px]">Glass and clay. Never plastic.</h2>
+                <p className="mt-2 font-deva text-[20px] text-ghee">काँच की बोतल, मिट्टी का कुल्हड़</p>
+              </div>
+              <Folk scene="pouring" label h="h-[130px]" className="hidden shrink-0 sm:flex" />
+            </div>
+            <p className="mt-5 max-w-md text-[16px] leading-relaxed text-ink-2">
+              Milk and lassi come in glass bottles that we collect, sterilise and refill. Kheer comes in a kulhad, dahi sets in a clay matka, and ghee,
+              honey and oils are sealed in glass jars you’ll want to keep.
+            </p>
+            <dl className="mt-8 grid grid-cols-3 gap-4 border-t border-line pt-6">
+              {[["1 bottle", "reused 30+ times"], ["₹" + s.bottleDeposit, "refundable deposit"], ["0 g", "plastic in your fridge"]].map(([a, b]) => (
+                <div key={a}>
+                  <dt className="font-display text-[30px] leading-none">{a}</dt>
+                  <dd className="mt-1.5 text-[12.5px] text-ink-3">{b}</dd>
+                </div>
+              ))}
+            </dl>
+          </div>
+        </div>
+      </section>
+      </>
+    ),
+    ships: (
+      <>
+      <section className="relative pt-16 sm:pt-24">
+        <div className="container-x">
+          <div className="mb-10 grid items-end gap-8 lg:grid-cols-[1fr_380px] *:min-w-0">
+            <div>
+              <span className="eyebrow flex items-center gap-2"><Truck size={16} /> Ships across India</span>
+              <h2 className="mt-2 font-display text-[32px] leading-[1.05] min-[400px]:text-[36px] sm:text-[42px] 2xl:text-[48px]">Ghee, honey and oils, wherever you live</h2>
+              <p className="mt-1 font-deva text-[20px] text-ghee">पूरे भारत में डिलीवरी</p>
+              <p className="mt-3 max-w-xl text-[16px] leading-relaxed text-ink-2">Shelf-stable and sealed in glass, packed in moulded paper and couriered to any pincode in 3–6 days.</p>
+              <Frieze scenes={["sowing", "kolhu", "bees"]} labels className="mt-8 max-w-[540px]" />
+            </div>
+            <div className="arch-sm relative hidden aspect-[16/10] overflow-hidden lg:block">
+              <AutoVideo src="/videos/honey-jar.mp4" poster="/videos/honey-jar.jpg" label="Raw honey being scooped from a glass jar" />
+            </div>
+          </div>
+          <ProductRail label="Ships across India">
+            {shipped.map((p) => (
+              <ProductCard key={p.id} p={p} tint={tint[p.category.slug]} className="w-[200px] shrink-0 snap-start min-[400px]:w-[216px] lg:w-[236px]" />
+            ))}
+          </ProductRail>
+        </div>
+      </section>
+      </>
+    ),
+    numbers: (
+      <>
+      <section className="container-x pt-16 sm:pt-24">
+        <div className="relative isolate overflow-hidden rounded-[32px] bg-ink text-white">
+          <div className="absolute inset-0 -z-10 opacity-70">
+            <AutoVideo src="/videos/cows-close.mp4" poster="/videos/cows-close.jpg" label="Cows grazing at the goshala" />
+          </div>
+          <div className="absolute inset-0 -z-10 bg-gradient-to-r from-black/75 via-black/45 to-black/10" />
+          <div className="grid gap-10 p-6 sm:p-12 lg:grid-cols-[1fr_1.2fr] lg:p-16 *:min-w-0">
+            <div>
+              <span className="text-[11.5px] font-semibold uppercase tracking-[0.16em] text-white/60">Our goshala</span>
+              <h2 className="mt-2 font-display text-[32px] leading-[1.04] min-[400px]:text-[36px] sm:text-[48px] 2xl:text-[54px]">A real farm, with real names on every cow.</h2>
+              <Link href="/goshala" className="mt-8 inline-flex items-center gap-2 rounded-2xl bg-white px-6 py-3.5 text-[15px] font-semibold text-ink hover:bg-malai">
+                Visit our goshala <ArrowUpRight size={17} />
+              </Link>
+            </div>
+            <dl className="grid grid-cols-2 gap-x-8 gap-y-10 self-end">
+              {[[s.cows, "desi cows & buffaloes"], [s.litresPerDay + " L", "milked every morning"], ["0", "middlemen"], [s.kmToCity + " km", "from goshala to city"]].map(([a, b]) => (
+                <div key={b} className="border-t border-white/25 pt-4">
+                  <dt className="font-display text-[40px] leading-none sm:text-[64px]">{a}</dt>
+                  <dd className="mt-2 text-[14px] text-white/75">{b}</dd>
+                </div>
+              ))}
+            </dl>
+          </div>
+        </div>
+      </section>
+      </>
+    ),
+    reviews: (
+      <>
+      <section className="container-x pt-16 sm:pt-24">
+        <SectionHead eyebrow="From our families" title="What our families say" hindi="हमारे परिवार" art="churn" />
+        <div className="no-scrollbar -mx-5 flex snap-x scroll-px-5 snap-mandatory gap-3 overflow-x-auto px-5 pb-2 sm:mx-0 sm:block sm:columns-2 sm:gap-4 sm:overflow-visible sm:px-0 lg:columns-3">
+          {reviews.map((r) => (
+            <div key={r.id} className="w-[84%] shrink-0 snap-start sm:mb-4 sm:w-auto sm:break-inside-avoid">
+              <figure className="h-full rounded-[22px] border border-line bg-white p-5 sm:p-6">
+                <div className="flex gap-0.5">
+                  {Array.from({ length: 5 }).map((_, j) => <Star key={j} size={14} className={j < r.rating ? "fill-ghee text-ghee" : "text-line"} />)}
+                </div>
+                <blockquote className="mt-3 font-display text-[19px] leading-snug sm:text-[21px]">“{r.body}”</blockquote>
+                <figcaption className="mt-4 flex items-center justify-between text-[13px]">
+                  <span><b className="font-semibold">{r.name}</b> <span className="text-ink-3">· {r.city}</span></span>
+                  {r.product && <Link href={`/product/${r.product.slug}`} className="text-ghee-deep hover:underline">{r.product.name}</Link>}
+                </figcaption>
+              </figure>
+            </div>
+          ))}
+        </div>
+      </section>
+      </>
+    ),
+    trace: (
+      <>
+      <section className="container-x pt-14 sm:pt-20">
+        <div className="relative grid gap-8 overflow-hidden rounded-[32px] border border-line bg-white p-6 sm:p-12 lg:grid-cols-[1.2fr_1fr] lg:items-center *:min-w-0">
+          <div>
+            <span className="eyebrow flex items-center gap-2"><Flask size={15} /> Trace your jar</span>
+            <h2 className="mt-2 font-display text-[30px] leading-[1.05] min-[400px]:text-[34px] sm:text-[40px] 2xl:text-[46px]">Every jar has a batch code. Look it up.</h2>
+            <p className="mt-3 max-w-lg text-[16px] leading-relaxed text-ink-2">
+              See when it was made, how much went into it, and the lab report for that exact batch. Nobody else in your pantry does this.
+            </p>
+            <div className="mt-6"><TraceBox example={batch?.code} /></div>
+          </div>
+          {batch && (
+            <div className="space-y-6">
+              <Link href={`/trace/${batch.code}`} className="group block rounded-[24px] bg-malai p-6 transition hover:bg-malai-2">
+                <div className="flex items-center justify-between">
+                  <span className="rounded-full bg-tulsi-soft px-3 py-1 text-[12px] font-semibold text-tulsi">Latest batch · {batch.result}</span>
+                  <ArrowUpRight size={18} className="text-ink-3 transition group-hover:text-ink" />
+                </div>
+                <p className="mt-5 font-mono text-[13px] tracking-wider text-ink-3">{batch.code}</p>
+                <p className="mt-1 font-display text-[28px] leading-tight">{batch.product.name}</p>
+                <dl className="mt-5 grid grid-cols-3 gap-3 text-[13px]">
+                  <div><dt className="text-ink-3">Made on</dt><dd className="font-semibold">{batch.madeOn.toLocaleDateString("en-IN", { day: "numeric", month: "short" })}</dd></div>
+                  <div><dt className="text-ink-3">Purity</dt><dd className="font-semibold">{batch.fat ?? "—"}</dd></div>
+                  <div><dt className="text-ink-3">Quantity</dt><dd className="font-semibold">{batch.quantity.split(" ")[0]} jars</dd></div>
+                </dl>
+              </Link>
+              <Folk scene="jars" label h="h-[110px]" />
+            </div>
+          )}
+        </div>
+      </section>
+      </>
+    ),
+    gallery: (
+      <>
+      <section className="container-x pt-16 sm:pt-24">
+        <SectionHead eyebrow="Life at the goshala" title="Mornings at Gaurgram" hindi="गौशाला की सुबह" art="cooking" />
+        <div className="grid auto-rows-[120px] grid-cols-2 gap-2 sm:auto-rows-[220px] sm:gap-3 lg:grid-cols-4">
+          <div className="relative col-span-2 row-span-2 overflow-hidden rounded-[24px]"><AutoVideo src="/videos/dawn-meadow.mp4" poster="/videos/dawn-meadow.jpg" label="Sunrise over the goshala meadow" /></div>
+          <div className="relative overflow-hidden rounded-[24px]"><Image src="/images/cow-desi.jpg" alt="Desi cow" fill sizes="25vw" className="object-cover" /></div>
+          <div className="relative overflow-hidden rounded-[24px]"><AutoVideo src="/videos/bees-hive.mp4" poster="/videos/bees-hive.jpg" label="Bees at our hives" /></div>
+          <div className="relative overflow-hidden rounded-[24px]"><Image src="/images/makhan.jpg" alt="Fresh white makhan" fill sizes="25vw" className="object-cover" /></div>
+          <div className="relative overflow-hidden rounded-[24px]"><Image src="/images/field-sunset.jpg" alt="Mustard fields at dusk" fill sizes="25vw" className="object-cover" /></div>
+        </div>
+      </section>
+      </>
+    ),
+  };
 
   return (
     <>
@@ -74,6 +365,7 @@ export default async function Home() {
             { shape: "marigold", className: "left-[44%] bottom-[10%] h-10 w-10 hidden lg:block", depth: 110 },
           ]}
         />
+        <FestivalHero festival={s.festival} />
         <div className="container-x relative grid items-center gap-8 pb-12 pt-6 sm:gap-10 sm:pb-16 sm:pt-10 lg:grid-cols-[1.1fr_1fr] lg:gap-12 lg:pb-16 lg:pt-8 2xl:pt-14 *:min-w-0">
           <div className="relative z-10">
             <div>
@@ -96,13 +388,13 @@ export default async function Home() {
                   <span className="hidden sm:inline">Shop the harvest</span> <ArrowRight size={17} />
                 </Link>
                 <Link href="/subscribe" className="inline-flex h-13 items-center justify-center gap-2 rounded-2xl border-[1.5px] border-tulsi px-4 py-3.5 text-[14px] font-semibold text-tulsi transition hover:bg-tulsi-soft sm:px-6 sm:text-[15px]">
-                  <Milk size={17} /> Start daily milk
+                  <MilkCan size={18} /> Start daily milk
                 </Link>
               </div>
               <div className="mt-6 flex flex-wrap items-center gap-x-5 gap-y-2 text-[12.5px] text-ink-2 sm:mt-7 sm:gap-x-7 sm:gap-y-3 sm:text-[13px] 2xl:mt-9">
                 <span className="flex items-center gap-1.5"><Star size={15} className="fill-ghee text-ghee" /><b className="text-ink">4.9</b> from {s.families} families</span>
-                <span className="flex items-center gap-1.5"><Recycle size={15} className="text-tulsi" /> Glass &amp; clay only</span>
-                <span className="flex items-center gap-1.5"><FlaskConical size={15} className="text-tulsi" /> Every batch lab-tested</span>
+                <span className="flex items-center gap-1.5"><Bottle size={17} className="text-tulsi" /> Glass &amp; clay only</span>
+                <span className="flex items-center gap-1.5"><Flask size={17} className="text-tulsi" /> Every batch lab-tested</span>
               </div>
             </div>
           </div>
@@ -148,263 +440,12 @@ export default async function Home() {
         </div>
       </section>
 
-      {/* ───────── Categories (Blinkit-style tiles) ───────── */}
-      <section className="container-x pt-14 sm:pt-20">
-        <SectionHead eyebrow="Shop by kitchen staple" title="Everything from the goshala" hindi="सब कुछ, सीधे गौशाला से" art="grazing" />
-        <div className="grid grid-cols-4 gap-x-2 gap-y-5 sm:gap-3 lg:grid-cols-8">
-          {categories.map((c, i) => (
-            <Reveal key={c.id} delay={i * 0.04}>
-              <Link href={`/shop?c=${c.slug}`} className="group flex flex-col items-center text-center">
-                <span className="arch-sm relative block aspect-[4/5] w-full overflow-hidden p-1.5 transition duration-500 group-hover:-translate-y-1 sm:p-4" style={{ background: c.tint }}>
-                  <PackShot pack={c.pack} liquid={c.slug === "honey" ? "#c9861b" : c.slug === "oils" ? "#d4a017" : c.slug === "ghee" ? "#e2a93b" : c.slug === "kheer" ? "#f5e7c4" : "#fbf8ef"} title={c.hindi} className="h-full w-full transition duration-500 group-hover:scale-105" />
-                </span>
-                <b className="mt-2 text-[11.5px] font-semibold leading-tight sm:mt-3 sm:text-[14.5px]">{c.name}</b>
-                <span className="hidden font-deva text-[13px] text-ghee sm:block">{c.hindi}</span>
-              </Link>
-            </Reveal>
-          ))}
-        </div>
-      </section>
 
-      {/* ───────── Bestsellers ───────── */}
-      <section className="container-x pt-16 sm:pt-24">
-        <SectionHead
-          eyebrow="Bestsellers"
-          art="carry"
-          title={`Loved in ${s.families} kitchens`}
-          action={<Link href="/shop" className="inline-flex items-center gap-1.5 whitespace-nowrap text-[15px] font-semibold text-ghee-deep hover:gap-2.5">View all products <ArrowRight size={16} /></Link>}
-        />
-        <ProductRail label="Bestsellers">
-          {featured.map((p) => (
-            <ProductCard key={p.id} p={p} tint={tint[p.category.slug]} className="w-[200px] shrink-0 snap-start min-[400px]:w-[216px] lg:w-[236px]" />
-          ))}
-        </ProductRail>
-      </section>
+      {homeBanners.length > 0 && <PromoBanners banners={homeBanners} />}
 
-      {/* ───────── Making ───────── */}
-      <section className="khadi relative mt-16 py-14 sm:mt-24 sm:py-20">
-        <Floaters items={[{ shape: "drop", className: "right-[6%] top-10 h-12 w-9", depth: 70 }, { shape: "comb", className: "left-[2%] bottom-16 h-16 w-16 hidden md:block", depth: 90 }]} />
-        <div className="container-x relative">
-          <SectionHead eyebrow="How we make it" title={<>Nothing hidden. <span className="text-ghee">Watch us make it.</span></>} hindi="हम कैसे बनाते हैं" art="bilona">
-            Every product has its own film, shot at our goshala and farms. Tap a step to jump to that moment.
-          </SectionHead>
-          <MakingShowcase stories={stories} />
-        </div>
-      </section>
-
-      {/* ───────── Goshala to ghar timeline ───────── */}
-      <section className="container-x pt-16 sm:pt-24">
-        <SectionHead eyebrow="Every morning" title="Three hours from our cows to your door" hindi="सुबह 4 बजे से 7 बजे तक" art="milking">
-          No distributor, no cold-storage warehouse, no repacking. The milk in your glass was in the udder before sunrise.
-        </SectionHead>
-        <div className="no-scrollbar -mx-5 flex snap-x scroll-px-5 snap-mandatory gap-4 overflow-x-auto px-5 pb-2 sm:mx-0 sm:grid sm:grid-cols-2 sm:gap-5 sm:overflow-visible sm:px-0 lg:grid-cols-4">
-          {[
-            { t: "4:00 AM", h: "Hand milking", d: "Cows are milked by hand after their first feed.", media: { video: "/videos/hand-milking.mp4", poster: "/videos/hand-milking.jpg" } },
-            { t: "4:40 AM", h: "Chilled in 30 minutes", d: "Cloth-filtered and chilled to 4°C, never boiled or homogenised.", media: { img: "/images/milk-pour-jar.jpg" } },
-            { t: "5:30 AM", h: "Filled in glass", d: "Sterilised bottles, dated caps, packed in insulated crates.", media: { img: "/images/milk-bottles-line.jpg" } },
-            { t: "7:00 AM", h: "At your door", d: "Our own riders across Chandigarh, Mohali, Panchkula, Zirakpur.", media: { img: "/images/milk-jar-cookies.jpg" } },
-          ].map((x, i) => (
-            <div key={x.t} className="w-[70%] shrink-0 snap-start sm:w-auto">
-              <div className="group">
-                <div className="arch relative aspect-[3/4] overflow-hidden bg-malai-2">
-                  {"video" in x.media ? (
-                    <AutoVideo src={x.media.video!} poster={x.media.poster} label={x.h} />
-                  ) : (
-                    <Image src={x.media.img!} alt={x.h} fill sizes="(min-width:1024px) 25vw, (min-width:640px) 50vw, 100vw" className="object-cover transition duration-700 group-hover:scale-105" />
-                  )}
-                  <span className="absolute left-1/2 top-6 -translate-x-1/2 rounded-full bg-white/90 px-3 py-1 text-[13px] font-bold tabular-nums backdrop-blur">{x.t}</span>
-                </div>
-                <div className="mt-4 flex gap-3">
-                  <span className="mt-1 grid h-6 w-6 shrink-0 place-items-center rounded-full bg-ghee text-[11px] font-bold text-white">{i + 1}</span>
-                  <div>
-                    <h3 className="text-[17px] font-semibold">{x.h}</h3>
-                    <p className="mt-1 text-[14px] leading-relaxed text-ink-3">{x.d}</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* ───────── Subscription ───────── */}
-      <section className="relative mt-16 overflow-hidden sm:mt-24">
-        <div className="container-x grid items-center gap-10 lg:grid-cols-[0.9fr_1.1fr] *:min-w-0">
-          <Reveal>
-            <span className="eyebrow">Daily subscription</span>
-            <h2 className="mt-2 font-display text-[32px] leading-[1.03] min-[400px]:text-[36px] sm:text-[48px] 2xl:text-[54px]">Set it once. Fresh milk every morning.</h2>
-            <p className="mt-2 font-deva text-[20px] text-ghee">रोज़ सुबह, बिना झंझट</p>
-            <ul className="mt-6 space-y-3.5 text-[15px] text-ink-2">
-              {[
-                [Sunrise, "Choose your days and quantity, even different amounts on weekends"],
-                [HandHeart, "Skip tomorrow or change it until 10 PM tonight"],
-                [Leaf, "Going away? Pause for as many days as you like"],
-                [Recycle, "Pay from a prepaid wallet, only for what we deliver"],
-              ].map(([Icon, t]) => {
-                const I = Icon as typeof Sunrise;
-                return (
-                  <li key={t as string} className="flex items-start gap-3">
-                    <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-tulsi-soft text-tulsi"><I size={16} /></span>
-                    <span className="pt-1">{t as string}</span>
-                  </li>
-                );
-              })}
-            </ul>
-          </Reveal>
-          <Reveal delay={0.1}>
-            <MiniPlanner options={planner} />
-          </Reveal>
-        </div>
-        <div className="container-x mt-12">
-          <RideStrip />
-        </div>
-      </section>
-
-      {/* ───────── Glass promise ───────── */}
-      <section className="container-x pt-16 sm:pt-24">
-        <div className="grid overflow-hidden rounded-[32px] bg-malai lg:grid-cols-2">
-          <div className="relative aspect-[16/11] sm:aspect-auto sm:min-h-[340px] lg:min-h-[520px]">
-            <Image src="/images/milk-bottles-line.jpg" alt="Glass milk bottles lined up at the goshala" fill sizes="(min-width:1024px) 50vw, 100vw" className="object-cover" />
-          </div>
-          <div className="relative flex flex-col justify-center p-6 sm:p-12 lg:p-16">
-            <div className="flex items-end justify-between gap-4">
-              <div>
-                <span className="eyebrow">Our packaging promise</span>
-                <h2 className="mt-2 font-display text-[32px] leading-[1.04] min-[400px]:text-[36px] sm:text-[46px] 2xl:text-[52px]">Glass and clay. Never plastic.</h2>
-                <p className="mt-2 font-deva text-[20px] text-ghee">काँच की बोतल, मिट्टी का कुल्हड़</p>
-              </div>
-              <Folk scene="pouring" label h="h-[130px]" className="hidden shrink-0 sm:flex" />
-            </div>
-            <p className="mt-5 max-w-md text-[16px] leading-relaxed text-ink-2">
-              Milk and lassi come in glass bottles that we collect, sterilise and refill. Kheer comes in a kulhad, dahi sets in a clay matka, and ghee,
-              honey and oils are sealed in glass jars you’ll want to keep.
-            </p>
-            <dl className="mt-8 grid grid-cols-3 gap-4 border-t border-line pt-6">
-              {[["1 bottle", "reused 30+ times"], ["₹" + s.bottleDeposit, "refundable deposit"], ["0 g", "plastic in your fridge"]].map(([a, b]) => (
-                <div key={a}>
-                  <dt className="font-display text-[30px] leading-none">{a}</dt>
-                  <dd className="mt-1.5 text-[12.5px] text-ink-3">{b}</dd>
-                </div>
-              ))}
-            </dl>
-          </div>
-        </div>
-      </section>
-
-      {/* ───────── Ships across India ───────── */}
-      <section className="relative pt-16 sm:pt-24">
-        <div className="container-x">
-          <div className="mb-10 grid items-end gap-8 lg:grid-cols-[1fr_380px] *:min-w-0">
-            <div>
-              <span className="eyebrow flex items-center gap-2"><Truck size={14} /> Ships across India</span>
-              <h2 className="mt-2 font-display text-[32px] leading-[1.05] min-[400px]:text-[36px] sm:text-[42px] 2xl:text-[48px]">Ghee, honey and oils, wherever you live</h2>
-              <p className="mt-1 font-deva text-[20px] text-ghee">पूरे भारत में डिलीवरी</p>
-              <p className="mt-3 max-w-xl text-[16px] leading-relaxed text-ink-2">Shelf-stable and sealed in glass, packed in moulded paper and couriered to any pincode in 3–6 days.</p>
-              <Frieze scenes={["sowing", "kolhu", "bees"]} labels className="mt-8 max-w-[540px]" />
-            </div>
-            <div className="arch-sm relative hidden aspect-[16/10] overflow-hidden lg:block">
-              <AutoVideo src="/videos/honey-jar.mp4" poster="/videos/honey-jar.jpg" label="Raw honey being scooped from a glass jar" />
-            </div>
-          </div>
-          <ProductRail label="Ships across India">
-            {shipped.map((p) => (
-              <ProductCard key={p.id} p={p} tint={tint[p.category.slug]} className="w-[200px] shrink-0 snap-start min-[400px]:w-[216px] lg:w-[236px]" />
-            ))}
-          </ProductRail>
-        </div>
-      </section>
-
-      {/* ───────── Numbers over film ───────── */}
-      <section className="container-x pt-16 sm:pt-24">
-        <div className="relative isolate overflow-hidden rounded-[32px] bg-ink text-white">
-          <div className="absolute inset-0 -z-10 opacity-70">
-            <AutoVideo src="/videos/cows-close.mp4" poster="/videos/cows-close.jpg" label="Cows grazing at the goshala" />
-          </div>
-          <div className="absolute inset-0 -z-10 bg-gradient-to-r from-black/75 via-black/45 to-black/10" />
-          <div className="grid gap-10 p-6 sm:p-12 lg:grid-cols-[1fr_1.2fr] lg:p-16 *:min-w-0">
-            <div>
-              <span className="text-[11.5px] font-semibold uppercase tracking-[0.16em] text-white/60">Our goshala</span>
-              <h2 className="mt-2 font-display text-[32px] leading-[1.04] min-[400px]:text-[36px] sm:text-[48px] 2xl:text-[54px]">A real farm, with real names on every cow.</h2>
-              <Link href="/goshala" className="mt-8 inline-flex items-center gap-2 rounded-2xl bg-white px-6 py-3.5 text-[15px] font-semibold text-ink hover:bg-malai">
-                Visit our goshala <ArrowUpRight size={17} />
-              </Link>
-            </div>
-            <dl className="grid grid-cols-2 gap-x-8 gap-y-10 self-end">
-              {[[s.cows, "desi cows & buffaloes"], [s.litresPerDay + " L", "milked every morning"], ["0", "middlemen"], [s.kmToCity + " km", "from goshala to city"]].map(([a, b]) => (
-                <div key={b} className="border-t border-white/25 pt-4">
-                  <dt className="font-display text-[40px] leading-none sm:text-[64px]">{a}</dt>
-                  <dd className="mt-2 text-[14px] text-white/75">{b}</dd>
-                </div>
-              ))}
-            </dl>
-          </div>
-        </div>
-      </section>
-
-      {/* ───────── Reviews ───────── */}
-      <section className="container-x pt-16 sm:pt-24">
-        <SectionHead eyebrow="From our families" title="What our families say" hindi="हमारे परिवार" art="churn" />
-        <div className="no-scrollbar -mx-5 flex snap-x scroll-px-5 snap-mandatory gap-3 overflow-x-auto px-5 pb-2 sm:mx-0 sm:block sm:columns-2 sm:gap-4 sm:overflow-visible sm:px-0 lg:columns-3">
-          {reviews.map((r) => (
-            <div key={r.id} className="w-[84%] shrink-0 snap-start sm:mb-4 sm:w-auto sm:break-inside-avoid">
-              <figure className="h-full rounded-[22px] border border-line bg-white p-5 sm:p-6">
-                <div className="flex gap-0.5">
-                  {Array.from({ length: 5 }).map((_, j) => <Star key={j} size={14} className={j < r.rating ? "fill-ghee text-ghee" : "text-line"} />)}
-                </div>
-                <blockquote className="mt-3 font-display text-[19px] leading-snug sm:text-[21px]">“{r.body}”</blockquote>
-                <figcaption className="mt-4 flex items-center justify-between text-[13px]">
-                  <span><b className="font-semibold">{r.name}</b> <span className="text-ink-3">· {r.city}</span></span>
-                  {r.product && <Link href={`/product/${r.product.slug}`} className="text-ghee-deep hover:underline">{r.product.name}</Link>}
-                </figcaption>
-              </figure>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* ───────── Lab reports + trace ───────── */}
-      <section className="container-x pt-14 sm:pt-20">
-        <div className="relative grid gap-8 overflow-hidden rounded-[32px] border border-line bg-white p-6 sm:p-12 lg:grid-cols-[1.2fr_1fr] lg:items-center *:min-w-0">
-          <div>
-            <span className="eyebrow flex items-center gap-2"><FlaskConical size={14} /> Trace your jar</span>
-            <h2 className="mt-2 font-display text-[30px] leading-[1.05] min-[400px]:text-[34px] sm:text-[40px] 2xl:text-[46px]">Every jar has a batch code. Look it up.</h2>
-            <p className="mt-3 max-w-lg text-[16px] leading-relaxed text-ink-2">
-              See when it was made, how much went into it, and the lab report for that exact batch. Nobody else in your pantry does this.
-            </p>
-            <div className="mt-6"><TraceBox example={batch?.code} /></div>
-          </div>
-          {batch && (
-            <div className="space-y-6">
-              <Link href={`/trace/${batch.code}`} className="group block rounded-[24px] bg-malai p-6 transition hover:bg-malai-2">
-                <div className="flex items-center justify-between">
-                  <span className="rounded-full bg-tulsi-soft px-3 py-1 text-[12px] font-semibold text-tulsi">Latest batch · {batch.result}</span>
-                  <ArrowUpRight size={18} className="text-ink-3 transition group-hover:text-ink" />
-                </div>
-                <p className="mt-5 font-mono text-[13px] tracking-wider text-ink-3">{batch.code}</p>
-                <p className="mt-1 font-display text-[28px] leading-tight">{batch.product.name}</p>
-                <dl className="mt-5 grid grid-cols-3 gap-3 text-[13px]">
-                  <div><dt className="text-ink-3">Made on</dt><dd className="font-semibold">{batch.madeOn.toLocaleDateString("en-IN", { day: "numeric", month: "short" })}</dd></div>
-                  <div><dt className="text-ink-3">Purity</dt><dd className="font-semibold">{batch.fat ?? "—"}</dd></div>
-                  <div><dt className="text-ink-3">Quantity</dt><dd className="font-semibold">{batch.quantity.split(" ")[0]} jars</dd></div>
-                </dl>
-              </Link>
-              <Folk scene="jars" label h="h-[110px]" />
-            </div>
-          )}
-        </div>
-      </section>
-
-      {/* ───────── Life at the goshala ───────── */}
-      <section className="container-x pt-16 sm:pt-24">
-        <SectionHead eyebrow="Life at the goshala" title="Mornings at Gaurgram" hindi="गौशाला की सुबह" art="cooking" />
-        <div className="grid auto-rows-[120px] grid-cols-2 gap-2 sm:auto-rows-[220px] sm:gap-3 lg:grid-cols-4">
-          <div className="relative col-span-2 row-span-2 overflow-hidden rounded-[24px]"><AutoVideo src="/videos/dawn-meadow.mp4" poster="/videos/dawn-meadow.jpg" label="Sunrise over the goshala meadow" /></div>
-          <div className="relative overflow-hidden rounded-[24px]"><Image src="/images/cow-desi.jpg" alt="Desi cow" fill sizes="25vw" className="object-cover" /></div>
-          <div className="relative overflow-hidden rounded-[24px]"><AutoVideo src="/videos/bees-hive.mp4" poster="/videos/bees-hive.jpg" label="Bees at our hives" /></div>
-          <div className="relative overflow-hidden rounded-[24px]"><Image src="/images/makhan.jpg" alt="Fresh white makhan" fill sizes="25vw" className="object-cover" /></div>
-          <div className="relative overflow-hidden rounded-[24px]"><Image src="/images/field-sunset.jpg" alt="Mustard fields at dusk" fill sizes="25vw" className="object-cover" /></div>
-        </div>
-      </section>
+      {order.filter((x) => x.visible).map((x) => (
+        <Fragment key={x.key}>{sections[x.key]}</Fragment>
+      ))}
     </>
   );
 }

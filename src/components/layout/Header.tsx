@@ -17,7 +17,7 @@ const NAV = [
   { href: "/lab-reports", label: "Lab reports" },
 ];
 
-export default function Header({ announcement }: { announcement: string }) {
+export default function Header({ announcement, announcementHref }: { announcement: string; announcementHref?: string }) {
   const { count, subtotal, setOpen, pin, setPinOpen } = useCart();
   const [q, setQ] = useState("");
   const [menu, setMenu] = useState(false);
@@ -73,7 +73,11 @@ export default function Header({ announcement }: { announcement: string }) {
   return (
     <>
       <div className="bg-ink text-center text-[11px] text-white/85 sm:text-[12px]">
-        <p className="container-x truncate py-1.5 sm:py-2">{announcement}</p>
+        {announcementHref ? (
+          <Link href={announcementHref} className="container-x block truncate py-1.5 hover:text-white sm:py-2">{announcement} <span className="text-[#f1c46a]">→</span></Link>
+        ) : (
+          <p className="container-x truncate py-1.5 sm:py-2">{announcement}</p>
+        )}
       </div>
       <header className={cx("sticky top-0 z-50 border-b bg-[#fbf8f1]/95 backdrop-blur transition-[border-color,box-shadow]", scrolled ? "border-line shadow-[0_6px_24px_-18px_rgba(0,0,0,.25)]" : "border-transparent")}>
         <div className="container-x flex h-[64px] items-center gap-3 sm:h-[72px] sm:gap-4 lg:gap-6">
@@ -104,6 +108,7 @@ export default function Header({ announcement }: { announcement: string }) {
             <button
               type="button"
               onClick={() => setOpen(true)}
+              data-cart-target
               className={cx(
                 "relative flex h-11 items-center gap-2.5 rounded-xl px-3 text-[14px] font-semibold transition sm:h-12 sm:px-4",
                 count ? "bg-tulsi text-white hover:bg-tulsi-deep" : "bg-malai text-ink-2 hover:bg-malai-2",

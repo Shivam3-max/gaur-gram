@@ -2,7 +2,8 @@
 
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Minus, Plus, Check, Sunrise, Wallet, Info } from "lucide-react";
+import { Minus, Plus, Check, Info } from "lucide-react";
+import { Sunrise, Potli } from "../folk/icons";
 import PackShot from "../PackShot";
 import AddressForm from "../account/AddressForm";
 import LoginForm from "../account/LoginForm";
@@ -22,6 +23,7 @@ type Props = {
   user: { name: string; wallet: number } | null;
   addresses: Addr[];
   loginNext: string;
+  holidays?: string[];
 };
 
 function Stepper({ value, onChange, min = 0, small }: { value: number; onChange: (n: number) => void; min?: number; small?: boolean }) {
@@ -44,7 +46,7 @@ function Step({ n, title, children }: { n: number; title: string; children: Reac
   );
 }
 
-export default function SubscribeBuilder({ products, initial, earliest, cutoffHour, user, addresses: initialAddr, loginNext }: Props) {
+export default function SubscribeBuilder({ products, initial, earliest, cutoffHour, user, addresses: initialAddr, loginNext, holidays = [] }: Props) {
   const router = useRouter();
   const startP = Math.max(0, products.findIndex((p) => p.slug === initial.product));
   const [pi, setPi] = useState(startP);
@@ -69,7 +71,7 @@ export default function SubscribeBuilder({ products, initial, earliest, cutoffHo
   const unit = v.subPrice ?? v.price;
 
   const qtyOn = (date: string) => {
-    if (date < start) return 0;
+    if (date < start || holidays.includes(date)) return 0;
     if (pattern === "DAILY") return qty;
     if (pattern === "ALTERNATE") return diffDays(start, date) % 2 === 0 ? qty : 0;
     return week[weekday(date)];
@@ -249,7 +251,7 @@ export default function SubscribeBuilder({ products, initial, earliest, cutoffHo
                 <div key={d} className={cx("rounded-lg border py-1.5", q ? "border-tulsi/40 bg-white" : "border-transparent bg-malai-2/60 text-ink-3")}>
                   <span className="block text-[10px] uppercase">{WEEKDAYS[weekday(d)].slice(0, 2)}</span>
                   <span className="block text-[13px] font-semibold tabular-nums">{d.slice(8)}</span>
-                  <span className={cx("block text-[10.5px] font-bold", q ? "text-tulsi" : "")}>{q ? `×${q}` : "–"}</span>
+                  <span className={cx("block text-[10.5px] font-bold", q ? "text-tulsi" : holidays.includes(d) ? "text-clay" : "")}>{q ? `×${q}` : holidays.includes(d) ? "छुट्टी" : "–"}</span>
                 </div>
               );
             })}
@@ -265,7 +267,7 @@ export default function SubscribeBuilder({ products, initial, earliest, cutoffHo
           </div>
 
           <p className="mt-4 flex gap-2.5 rounded-xl bg-white p-3.5 text-[13px] text-ink-2">
-            <Wallet size={17} className="mt-0.5 shrink-0 text-tulsi" />
+            <Potli size={18} className="mt-0.5 shrink-0 text-tulsi" />
             <span>No upfront payment. Each delivery is paid from your Gaurgram wallet{user ? <> (balance <b>{rupees(user.wallet)}</b>)</> : ""}. Top up anytime with UPI.</span>
           </p>
           {addr && !addr.fresh && (

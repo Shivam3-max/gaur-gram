@@ -163,7 +163,7 @@ export function Man({ x, y = 100, lean = 0, flip = false, hands, armAnim, held, 
   );
 }
 
-const COW_BODY =
+export const COW_BODY =
   "M16 53 C26 49 42 50 50 49 C53 45 58 42 62 44 C66 46 70 49 74 50 C80 51 86 55 91 60 C93 62 93 65 90 66 C86 67 81 67 78 69 C75 72 72 76 71 80 C70 81 68 80 67 79 L67 94 L68 96 L63 96 L63.5 82 L61 82 L61 94 L62 96 L57 96 L57.5 82 C48 85 38 85 31 82 L31 94 L32 96 L27 96 L27 84 L25 84 C25 88 24 91 23 94 L24 96 L19 96 L19.5 92 C19 86 16 80 15 74 C13 66 13 58 16 53 Z";
 
 /** Desi cow with hump and curved horns, facing right. x/y place the hooves' centre line. */

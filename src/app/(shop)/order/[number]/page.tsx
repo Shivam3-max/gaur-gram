@@ -1,11 +1,13 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
-import { CheckCircle2, Clock, Sunrise, Truck, Recycle } from "lucide-react";
+import { CheckCircle2, Clock } from "lucide-react";
+import { Sunrise, Truck, Bottle } from "@/components/folk/icons";
 import { currentUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { ORDER_STATUS, parseJSON, rupees } from "@/lib/format";
 import Folk from "@/components/folk/Folk";
+import PetalShower from "@/components/delight/PetalShower";
 
 export const metadata: Metadata = { title: "Order placed" };
 
@@ -27,6 +29,7 @@ export default async function OrderPage({ params, searchParams }: { params: Prom
       <div className="mx-auto max-w-3xl">
         <div className="text-center">
           {paid || order.payment === "COD" ? <CheckCircle2 size={52} className="mx-auto text-tulsi" /> : <Clock size={52} className="mx-auto text-ghee" />}
+          {(paid || order.payment === "COD") && <PetalShower id={order.number} />}
           <p className="mt-4 font-deva text-[22px] text-ghee">धन्यवाद</p>
           <h1 className="font-display text-[32px] min-[400px]:text-[38px] leading-tight sm:text-[56px]">{paid || order.payment === "COD" ? "Thank you, your order is in." : "Your order is waiting for payment"}</h1>
           <p className="mt-3 text-[16px] text-ink-2">
@@ -71,7 +74,7 @@ export default async function OrderPage({ params, searchParams }: { params: Prom
               <p className="text-[14px] text-ink-2">{addr.line1}{addr.line2 && `, ${addr.line2}`}, {addr.city} {addr.pincode}</p>
             </div>
             <p className="flex gap-3 text-[14px] text-ink-2">{order.deliverOn ? <Sunrise size={18} className="shrink-0 text-ghee" /> : <Truck size={18} className="shrink-0 text-tulsi" />}{order.deliverOn ? "Our rider will bring it between 6 and 8 AM. You'll get a WhatsApp message when it's on the way." : "We'll WhatsApp you the courier tracking link once it ships."}</p>
-            <p className="flex gap-3 text-[14px] text-ink-2"><Recycle size={18} className="shrink-0 text-tulsi" /> Keep your glass bottles. Leave them out and we’ll collect them on the next delivery.</p>
+            <p className="flex gap-3 text-[14px] text-ink-2"><Bottle size={19} className="shrink-0 text-tulsi" /> Keep your glass bottles. Leave them out and we’ll collect them on the next delivery.</p>
           </section>
         </div>
 

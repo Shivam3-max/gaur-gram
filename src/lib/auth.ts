@@ -1,6 +1,8 @@
 import "server-only";
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
+import { can, type Area } from "./permissions";
 import { db } from "./db";
 
 const SECRET = process.env.SESSION_SECRET || "dev-only-secret";
@@ -64,8 +66,18 @@ export async function currentAdmin() {
   return db.admin.findUnique({ where: { id } });
 }
 
-export async function requireAdmin() {
+/** For server actions: the signed-in staff member, who must be allowed into `area`. */
+export async function requireAdmin(area?: Area) {
   const admin = await currentAdmin();
   if (!admin) throw new Error("Not signed in as admin");
+  if (area && !can(admin.role, area)) throw new Error("Your role doesn't allow this.");
+  return admin;
+}
+
+/** For admin pages: redirects to sign-in, or to the dashboard when the role can't open `area`. */
+export async function adminPage(area: Area) {
+  const admin = await currentAdmin();
+  if (!admin) redirect("/admin/login");
+  if (!can(admin.role, area)) redirect(`/admin?denied=${area}`);
   return admin;
 }

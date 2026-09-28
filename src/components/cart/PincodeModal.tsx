@@ -2,7 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { MapPin, X, Sunrise, Truck } from "lucide-react";
+import { MapPin, X } from "lucide-react";
+import { Sunrise, Truck } from "../folk/icons";
 import { useCart } from "./CartProvider";
 
 const CITIES = ["Chandigarh", "Mohali", "Panchkula", "Zirakpur"];

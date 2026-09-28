@@ -27,7 +27,7 @@ export default function StickyCartBar() {
             className="flex h-14 w-full items-center justify-between rounded-2xl bg-tulsi px-4 text-white shadow-[0_12px_30px_-10px_rgba(44,81,41,.6)]"
           >
             <span className="flex items-center gap-3">
-              <span className="grid h-9 w-9 place-items-center rounded-lg bg-white/15"><ShoppingBag size={18} /></span>
+              <span data-cart-target className="grid h-9 w-9 place-items-center rounded-lg bg-white/15"><ShoppingBag size={18} /></span>
               <span className="text-left leading-tight">
                 <span className="block text-[13px] font-semibold">{count} {count === 1 ? "item" : "items"}</span>
                 <span className="text-[13px] tabular-nums text-white/85">{rupees(subtotal)}</span>

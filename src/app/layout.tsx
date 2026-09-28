@@ -17,7 +17,7 @@ export const viewport: Viewport = { themeColor: "#ffffff" };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${gloock.variable} ${figtree.variable} ${tiro.variable}`}>
+    <html lang="en" data-scroll-behavior="smooth" className={`${gloock.variable} ${figtree.variable} ${tiro.variable}`}>
       <body className="min-h-dvh">{children}</body>
     </html>
   );

@@ -1,6 +1,7 @@
 import "server-only";
 import { db } from "./db";
 import { qtyOn } from "./schedule";
+import { getHolidays } from "./holidays";
 
 export type ManifestStop = {
   key: string;
@@ -22,6 +23,8 @@ export type ManifestStop = {
 
 /** Everything that must leave the goshala on a date: subscription drops plus one-time Tricity orders. */
 export async function buildManifest(date: string) {
+  const holidays = await getHolidays();
+  const holiday = holidays.list.find((h) => h.date === date) ?? null;
   const [subs, orders, done] = await Promise.all([
     db.subscription.findMany({
       where: { status: { not: "CANCELLED" }, startDate: { lte: date } },
@@ -34,7 +37,7 @@ export async function buildManifest(date: string) {
 
   const stops: ManifestStop[] = [];
   for (const s of subs) {
-    const q = qtyOn(s, date, Object.fromEntries(s.overrides.map((o) => [o.date, o.qty])));
+    const q = qtyOn(s, date, Object.fromEntries(s.overrides.map((o) => [o.date, o.qty])), holidays.set);
     if (q <= 0) continue;
     const unit = s.variant.subPrice ?? s.variant.price;
     stops.push({
@@ -64,7 +67,7 @@ export async function buildManifest(date: string) {
       totals.set(i.variantId, t);
     }
 
-  return { stops, totals: [...totals.values()].sort((a, b) => b.qty - a.qty) };
+  return { stops, totals: [...totals.values()].sort((a, b) => b.qty - a.qty), holiday };
 }
 
 /** Converts "500 ml" / "1 L" labels into litres so the goshala knows how much milk to keep aside. */

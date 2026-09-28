@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Sunrise, Truck } from "lucide-react";
+import { Sunrise, Truck } from "@/components/folk/icons";
 import { db } from "@/lib/db";
 import { getSettings } from "@/lib/settings";
 import Folk from "@/components/folk/Folk";
@@ -19,12 +19,12 @@ export default async function DeliveryPage() {
       </div>
       <div className="mt-10 grid gap-5 md:grid-cols-2">
         <div className="rounded-[24px] bg-ghee-soft p-7">
-          <Sunrise className="text-ghee-deep" />
+          <Sunrise size={34} className="text-ghee-deep" />
           <h2 className="mt-3 font-display text-[28px]">Morning delivery · Tricity</h2>
           <p className="mt-2 text-[15px] text-ink-2">Milk, dahi, lassi, kheer, makhan and paneer arrive between 6 and 8 AM. Order or change by {Number(s.cutoffHour) - 12} PM the night before. Free above ₹{s.freeDeliveryAbove}, otherwise ₹{s.deliveryFee}.</p>
         </div>
         <div className="rounded-[24px] bg-tulsi-soft p-7">
-          <Truck className="text-tulsi" />
+          <Truck size={34} className="text-tulsi" />
           <h2 className="mt-3 font-display text-[28px]">Courier · All India</h2>
           <p className="mt-2 text-[15px] text-ink-2">Ghee, honey and cold-pressed oils ship to every pincode in 3–6 days. Free above ₹{s.freeShipAbove}, otherwise ₹{s.shipFee}.</p>
         </div>

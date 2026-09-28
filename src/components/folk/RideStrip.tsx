@@ -30,7 +30,7 @@ export default function RideStrip({ className }: { className?: string }) {
           <Folk scene="cycle" h="h-[62px] sm:h-[88px]" />
         </div>
       </div>
-      <div className="flex justify-between font-deva text-[11.5px] text-ghee/70 sm:text-[12.5px]">
+      <div className="flex justify-between font-deva text-[12.5px] text-ghee-deep sm:text-[13.5px]">
         <span>गौशाला · सुबह 4 बजे</span>
         <span>आपका घर · 7 बजे</span>
       </div>

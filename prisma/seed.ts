@@ -31,6 +31,9 @@ const categories = [
   { slug: "oils", name: "Cold-Pressed Oils", hindi: "कच्ची घानी", blurb: "Wooden-press, first extraction", pack: "oil", tint: "#f2f3e2" },
 ];
 
+// GST included in prices, by category. Placeholder rates: confirm each with your CA (editable per product in admin).
+const GST_BY_CATEGORY: Record<string, number> = { ghee: 5, milk: 0, dahi: 5, lassi: 5, kheer: 5, "makhan-paneer": 5, honey: 5, oils: 5 };
+
 type V = { label: string; price: number; mrp: number; subPrice?: number };
 type P = {
   slug: string; name: string; hindi: string; cat: string; tagline: string; description: string;
@@ -362,6 +365,9 @@ async function main() {
   await db.pincode.deleteMany();
   await db.coupon.deleteMany();
   await db.admin.deleteMany();
+  await db.banner.deleteMany();
+  await db.holiday.deleteMany();
+  await db.auditLog.deleteMany();
 
   const catIds: Record<string, string> = {};
   for (const [i, c] of categories.entries()) {
@@ -379,6 +385,7 @@ async function main() {
         liquid: p.liquid, label: p.label ?? "#1c1a15", video: p.video ?? null,
         gallery: JSON.stringify(p.gallery), highlights: JSON.stringify(p.highlights),
         ingredients: p.ingredients, shelfLife: p.shelfLife, storage: p.storage, badge: p.badge ?? null,
+        gstRate: p.slug === "malai-paneer" ? 0 : GST_BY_CATEGORY[p.cat] ?? 5,
         rating: p.rating, ratingCount: p.ratingCount, featured: !!p.featured, sort: i,
         variants: {
           create: p.variants.map((v, j) => ({
@@ -434,6 +441,8 @@ async function main() {
       data: {
         code, productId: productIds[slug], madeOn: new Date(addDays(t, d) + "T06:00:00+05:30"),
         milkedOn: slug.includes("ghee") ? new Date(addDays(t, d - 2) + "T04:00:00+05:30") : null,
+        // Ghee 12 months, honey 24, oil 9; the oil batch is set close to expiry to show the alert
+        expiresOn: new Date(addDays(t, slug.includes("oil") ? 20 : slug.includes("honey") ? d + 730 : d + 365) + "T23:59:00+05:30"),
         quantity, fat, moisture, lab: "NABL-accredited partner lab (to be named)", result: "PASS",
         notes: "No vegetable fat detected. No added colour. Free from starch.",
       },
@@ -449,7 +458,7 @@ async function main() {
   const adminPassword = process.env.SEED_ADMIN_PASSWORD || randomBytes(9).toString("base64url");
   if (!process.env.SEED_ADMIN_PASSWORD) console.log(`Admin password (generated, set SEED_ADMIN_PASSWORD to choose your own): ${adminPassword}`);
   await db.admin.create({
-    data: { email: "admin@gaurgram.in", name: "Gaurgram Admin", role: "SUPER", password: await bcrypt.hash(adminPassword, 10) },
+    data: { email: "admin@gaurgram.in", name: "Gaurgram Admin", role: "OWNER", password: await bcrypt.hash(adminPassword, 10) },
   });
 
   let orderNumber = "none";
@@ -539,6 +548,11 @@ async function main() {
       });
     }
     orderNumber = order.number;
+
+    // A scheduled promotion, to show banners switching on by date
+    await db.banner.create({
+      data: { placement: "HOME", title: "Diwali ghee hampers are here", subtitle: "Two jars of bilona ghee in a wooden crate, with a handwritten note. Ships across India.", cta: "Shop hampers", href: "/product/ghee-gift-box", tone: "ghee", startsOn: t, endsOn: addDays(t, 30) },
+    });
   }
 
   console.log("Seeded", products.length, "products,", pincodes.length, "pincodes", withDemo ? `and demo data (order ${orderNumber})` : "without demo customers");

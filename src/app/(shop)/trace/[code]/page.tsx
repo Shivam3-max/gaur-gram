@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { Metadata } from "next";
-import { FlaskConical, CheckCircle2, FileText, SearchX } from "lucide-react";
+import { CheckCircle2, FileText, SearchX } from "lucide-react";
+import { Flask } from "@/components/folk/icons";
 import { db } from "@/lib/db";
 import { labelTitle } from "@/lib/catalog";
 import PackShot from "@/components/PackShot";
@@ -40,7 +41,7 @@ export default async function TracePage({ params }: { params: Promise<{ code: st
           <PackShot pack={b.product.pack} liquid={b.product.liquid} label={b.product.label} title={labelTitle(b.product.slug, b.product.category.hindi)} sub={b.code} className="h-full w-full" />
         </div>
         <div>
-          <span className="eyebrow flex items-center gap-2"><FlaskConical size={14} /> Batch trace</span>
+          <span className="eyebrow flex items-center gap-2"><Flask size={15} /> Batch trace</span>
           <p className="mt-3 font-mono text-[15px] tracking-wider text-ink-3">{b.code}</p>
           <h1 className="font-display text-[32px] min-[400px]:text-[38px] leading-tight sm:text-[56px]">{b.product.name}</h1>
           <p className="mt-3 inline-flex items-center gap-2 rounded-full bg-tulsi-soft px-4 py-2 text-[14px] font-semibold text-tulsi"><CheckCircle2 size={17} /> Lab result: {b.result}</p>

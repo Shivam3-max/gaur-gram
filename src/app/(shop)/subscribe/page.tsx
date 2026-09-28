@@ -1,11 +1,12 @@
 import Image from "next/image";
 import type { Metadata } from "next";
-import { CalendarCheck, Moon, Plane, Wallet } from "lucide-react";
+import { Calendar, Moon, Trunk, Potli } from "@/components/folk/icons";
 import { db } from "@/lib/db";
 import { currentUser } from "@/lib/auth";
 import { labelTitle } from "@/lib/catalog";
 import { getSettings, num } from "@/lib/settings";
 import { firstEditableDate } from "@/lib/schedule";
+import { getHolidays } from "@/lib/holidays";
 import SubscribeBuilder from "@/components/subscribe/SubscribeBuilder";
 import Folk from "@/components/folk/Folk";
 
@@ -43,15 +44,15 @@ export default async function SubscribePage({ searchParams }: { searchParams: SP
             <p className="mt-2 font-deva text-[18px] text-[#f1c46a] sm:text-[22px]">रोज़ सुबह, ताज़ा दूध</p>
             <div className="mt-5 grid grid-cols-2 gap-x-3 gap-y-3 text-[12.5px] leading-snug text-white/85 sm:mt-8 sm:gap-4 sm:text-[14px]">
               {[
-                [CalendarCheck, "Pick days and quantity"],
+                [Calendar, "Pick days and quantity"],
                 [Moon, `Change tomorrow until ${cutoff > 12 ? cutoff - 12 : cutoff} PM`],
-                [Plane, "Pause while you travel"],
-                [Wallet, "Pay only for what's delivered"],
+                [Trunk, "Pause while you travel"],
+                [Potli, "Pay only for what's delivered"],
               ].map(([I, t]) => {
-                const Icon = I as typeof Wallet;
+                const Icon = I as typeof Potli;
                 return (
                   <span key={t as string} className="flex items-center gap-2 sm:gap-3">
-                    <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-white/15 sm:h-9 sm:w-9"><Icon size={15} /></span>
+                    <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-white/15 sm:h-9 sm:w-9"><Icon size={16} /></span>
                     {t as string}
                   </span>
                 );
@@ -73,6 +74,7 @@ export default async function SubscribePage({ searchParams }: { searchParams: SP
           user={user ? { name: user.name, wallet: user.wallet } : null}
           addresses={addresses.map((a) => ({ id: a.id, label: a.label, name: a.name, line1: a.line1, city: a.city, pincode: a.pincode, fresh: fresh.has(a.pincode) }))}
           loginNext={`/subscribe${qs ? "?" + qs : ""}`}
+          holidays={(await getHolidays()).list.map((h) => h.date)}
         />
       </section>
 

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { Metadata } from "next";
-import { FlaskConical, ArrowUpRight, ShieldCheck } from "lucide-react";
+import { ArrowUpRight } from "lucide-react";
+import { Flask, Shield } from "@/components/folk/icons";
 import { db } from "@/lib/db";
 import { getSettings } from "@/lib/settings";
 import TraceBox from "@/components/home/TraceBox";
@@ -15,7 +16,7 @@ export default async function LabReportsPage() {
     <div className="container-x py-12">
       <div className="grid gap-10 lg:grid-cols-[1fr_1fr] lg:items-end *:min-w-0">
         <div>
-          <span className="eyebrow flex items-center gap-2"><FlaskConical size={14} /> Lab reports</span>
+          <span className="eyebrow flex items-center gap-2"><Flask size={15} /> Lab reports</span>
           <h1 className="mt-2 font-display text-[34px] min-[400px]:text-[40px] leading-[1] sm:text-[64px]">Tested, batch by batch. Published in full.</h1>
           <p className="mt-2 font-deva text-[22px] text-ghee">हर बैच की जाँच</p>
           <Folk scene="jars" label h="h-[96px]" align="left" className="mt-6" />
@@ -25,7 +26,7 @@ export default async function LabReportsPage() {
             Every batch of ghee, honey and oil is sent to an independent lab before it is sold. Type the code printed on your jar to see its report.
           </p>
           <TraceBox example={batches[0]?.code} />
-          <p className="flex items-center gap-2 text-[13px] text-ink-3"><ShieldCheck size={15} className="text-tulsi" /> FSSAI Lic. No. {s.fssai}</p>
+          <p className="flex items-center gap-2 text-[13px] text-ink-3"><Shield size={16} className="text-tulsi" /> FSSAI Lic. No. {s.fssai}</p>
         </div>
       </div>
 

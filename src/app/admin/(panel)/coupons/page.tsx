@@ -1,4 +1,5 @@
 import { db } from "@/lib/db";
+import { adminPage } from "@/lib/auth";
 import { rupees } from "@/lib/format";
 import { saveCoupon } from "../../actions";
 import { Card, Field, PageHead, Pill, Table, btn, btnSm, input, td } from "@/components/admin/ui";
@@ -6,6 +7,7 @@ import { Card, Field, PageHead, Pill, Table, btn, btnSm, input, td } from "@/com
 export const metadata = { title: "Coupons" };
 
 export default async function CouponsPage() {
+  await adminPage("coupons");
   const coupons = await db.coupon.findMany({ orderBy: { createdAt: "desc" } });
   return (
     <>

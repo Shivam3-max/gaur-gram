@@ -1,4 +1,8 @@
 import Link from "next/link";
+import { adminPage } from "@/lib/auth";
+import { can } from "@/lib/permissions";
+import { stockAlerts } from "@/lib/stock";
+import { getHolidays } from "@/lib/holidays";
 import { ArrowUpRight, Milk, Wallet, CalendarClock, ShoppingBag, AlertTriangle } from "lucide-react";
 import { db } from "@/lib/db";
 import { addDays, istNow, prettyDate, today as istToday } from "@/lib/dates";
@@ -10,7 +14,10 @@ export const metadata = { title: "Dashboard" };
 
 const istDate = (d: Date) => new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Kolkata" }).format(d);
 
-export default async function Dashboard() {
+export default async function Dashboard({ searchParams }: { searchParams: Promise<{ denied?: string }> }) {
+  const admin = await adminPage("dashboard");
+  const { denied } = await searchParams;
+  const [alerts, holidays] = await Promise.all([can(admin.role, "stock") || can(admin.role, "batches") ? stockAlerts() : null, getHolidays()]);
   const today = istToday();
   const tomorrow = addDays(today, 1);
   const since = new Date(addDays(today, -15) + "T00:00:00+05:30");
@@ -54,6 +61,25 @@ export default async function Dashboard() {
       <PageHead title={istNow().hour < 12 ? "Good morning" : istNow().hour < 17 ? "Good afternoon" : "Good evening"} sub={`${prettyDate(today, { weekday: "long", day: "numeric", month: "long" })} · Tomorrow's orders lock at 10 PM`}>
         <Link href={`/admin/manifest?date=${tomorrow}`} className="inline-flex h-10 items-center gap-2 rounded-lg bg-tulsi px-4 text-[13.5px] font-semibold text-white">Open tomorrow’s manifest <ArrowUpRight size={15} /></Link>
       </PageHead>
+      {denied && <p className="mb-5 rounded-xl bg-clay-soft px-4 py-3 text-[13.5px] text-clay">Your role doesn’t include that page. Ask the owner to change your role in Staff & roles.</p>}
+      {(() => {
+        const soon = holidays.list.filter((h) => h.date >= today && h.date <= addDays(today, 7));
+        const items: { tone: string; text: React.ReactNode; href: string }[] = [];
+        if (alerts) {
+          const out = alerts.low.filter((v) => v.stock === 0).length;
+          const low = alerts.low.length - out;
+          if (out) items.push({ tone: "bg-clay-soft text-clay", text: <><b>{out}</b> out of stock</>, href: "/admin/stock" });
+          if (low) items.push({ tone: "bg-ghee-soft text-ghee-deep", text: <><b>{low}</b> running low</>, href: "/admin/stock" });
+          if (alerts.expired.length) items.push({ tone: "bg-clay-soft text-clay", text: <><b>{alerts.expired.length}</b> batch{alerts.expired.length > 1 ? "es" : ""} expired</>, href: "/admin/stock" });
+          if (alerts.expiring.length) items.push({ tone: "bg-ghee-soft text-ghee-deep", text: <><b>{alerts.expiring.length}</b> batch{alerts.expiring.length > 1 ? "es" : ""} expiring within 30 days</>, href: "/admin/stock" });
+        }
+        for (const h of soon) items.push({ tone: "bg-[#e7eef7] text-[#2f5d8a]", text: <>No delivery {prettyDate(h.date, { weekday: "short", day: "numeric", month: "short" })}{h.note ? ` · ${h.note}` : ""}</>, href: "/admin/holidays" });
+        return items.length ? (
+          <div className="mb-6 flex flex-wrap gap-2">
+            {items.map((x, i) => <Link key={i} href={x.href} className={`rounded-full px-3.5 py-1.5 text-[13px] ${x.tone} hover:brightness-95`}>{x.text}</Link>)}
+          </div>
+        ) : null;
+      })()}
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {kpis.map((k) => {

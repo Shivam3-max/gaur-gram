@@ -19,7 +19,41 @@ export const DEFAULT_SETTINGS = {
   litresPerDay: "212",
   families: "1,800+",
   kmToCity: "28",
+  /** none | diwali | holi | lohri */
+  festival: "none",
+  /** Variants at or below this stock show as low in admin */
+  lowStockAt: "15",
+  /** JSON list of homepage sections in display order, with visibility */
+  homeSections: "",
 };
+
+export const HOME_SECTIONS = [
+  { key: "categories", label: "Shop by category" },
+  { key: "bestsellers", label: "Bestsellers" },
+  { key: "making", label: "How we make it (films)" },
+  { key: "timeline", label: "Goshala to door timeline" },
+  { key: "subscribe", label: "Daily subscription planner" },
+  { key: "glass", label: "Glass & clay promise" },
+  { key: "ships", label: "Ships across India" },
+  { key: "numbers", label: "Farm numbers over video" },
+  { key: "reviews", label: "Customer reviews" },
+  { key: "trace", label: "Trace your jar" },
+  { key: "gallery", label: "Life at the goshala" },
+] as const;
+
+export type HomeSectionKey = (typeof HOME_SECTIONS)[number]["key"];
+
+/** Homepage sections in the admin's chosen order; new sections are appended as visible. */
+export function homeSectionOrder(raw: string): { key: HomeSectionKey; visible: boolean }[] {
+  let saved: { key: string; visible: boolean }[] = [];
+  try {
+    saved = raw ? JSON.parse(raw) : [];
+  } catch {}
+  const known = new Set<string>(HOME_SECTIONS.map((x) => x.key));
+  const out = saved.filter((x) => known.has(x.key)).map((x) => ({ key: x.key as HomeSectionKey, visible: x.visible !== false }));
+  for (const x of HOME_SECTIONS) if (!out.some((o) => o.key === x.key)) out.push({ key: x.key, visible: true });
+  return out;
+}
 
 export type Settings = typeof DEFAULT_SETTINGS;
 

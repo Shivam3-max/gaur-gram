@@ -1,4 +1,5 @@
 import { db } from "@/lib/db";
+import { adminPage } from "@/lib/auth";
 import { savePincode, togglePincode } from "../../actions";
 import { Card, Field, PageHead, btn, btnSm, input } from "@/components/admin/ui";
 import { cx } from "@/lib/format";
@@ -6,6 +7,7 @@ import { cx } from "@/lib/format";
 export const metadata = { title: "Delivery zones" };
 
 export default async function ZonesPage() {
+  await adminPage("zones");
   const pins = await db.pincode.findMany({ orderBy: [{ city: "asc" }, { code: "asc" }] });
   const byCity = pins.reduce<Record<string, typeof pins>>((m, p) => ((m[p.city] ??= []).push(p), m), {});
   return (

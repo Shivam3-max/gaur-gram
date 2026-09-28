@@ -1,13 +1,16 @@
 import Link from "next/link";
+import { adminPage } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { today as istToday } from "@/lib/dates";
 import { saveBatch } from "../../actions";
+import { daysLeft } from "@/lib/stock";
 import MediaField from "@/components/admin/MediaField";
 import { Card, Field, PageHead, Pill, Table, btn, input, td } from "@/components/admin/ui";
 
 export const metadata = { title: "Batches & lab reports" };
 
 export default async function BatchesPage() {
+  await adminPage("batches");
   const [batches, products] = await Promise.all([
     db.batch.findMany({ include: { product: true }, orderBy: { madeOn: "desc" } }),
     db.product.findMany({ where: { delivery: "SHIP" }, orderBy: { sort: "asc" } }),
@@ -18,12 +21,13 @@ export default async function BatchesPage() {
       <PageHead title="Batches & lab reports" sub="Every batch code printed on a jar can be traced by customers at /trace/CODE." />
       <div className="grid gap-6 xl:grid-cols-[1fr_400px] *:min-w-0">
         <Card pad={false}>
-          <Table head={["Code", "Product", "Made", "Qty", "Result", "Report"]}>
+          <Table head={["Code", "Product", "Made", "Expires", "Qty", "Result", "Report"]}>
             {batches.map((b) => (
               <tr key={b.id}>
                 <td className={td}><Link href={`/trace/${b.code}`} target="_blank" className="font-mono text-[12.5px] font-semibold hover:underline">{b.code}</Link></td>
                 <td className={td}>{b.product.name}</td>
                 <td className={`${td} tabular-nums`}>{b.madeOn.toLocaleDateString("en-IN", { day: "numeric", month: "short" })}</td>
+                <td className={td}>{b.expiresOn ? (() => { const d = daysLeft(b.expiresOn); return <span className={d < 0 ? "font-semibold text-clay" : d <= 30 ? "font-semibold text-ghee-deep" : "tabular-nums"}>{b.expiresOn.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "2-digit" })}{d < 0 ? " · expired" : d <= 30 ? ` · ${d}d` : ""}</span>; })() : <span className="text-[12px] text-ink-3">—</span>}</td>
                 <td className={td}>{b.quantity}</td>
                 <td className={td}><Pill tone={b.result === "PASS" ? "good" : "bad"}>{b.result}</Pill></td>
                 <td className={td}>{b.reportUrl ? <a href={b.reportUrl} target="_blank" rel="noreferrer" className="text-[12.5px] font-semibold text-ghee-deep hover:underline">PDF</a> : <span className="text-[12.5px] text-ink-3">Missing</span>}</td>
@@ -38,6 +42,7 @@ export default async function BatchesPage() {
             <div className="grid grid-cols-2 gap-3">
               <Field label="Made on"><input type="date" name="madeOn" defaultValue={t} required className={input} /></Field>
               <Field label="Milk collected"><input type="date" name="milkedOn" className={input} /></Field>
+              <Field label="Best before" hint="Used for expiry alerts"><input type="date" name="expiresOn" className={input} /></Field>
               <Field label="Batch size"><input name="quantity" placeholder="40 jars × 500 ml" className={input} /></Field>
               <Field label="Result"><select name="result" className={input}><option>PASS</option><option>FAIL</option></select></Field>
               <Field label="Purity / fat"><input name="fat" placeholder="99.6%" className={input} /></Field>

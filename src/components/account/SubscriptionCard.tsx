@@ -19,7 +19,8 @@ export type SubData = SubLike & {
   address: string;
 };
 
-export default function SubscriptionCard({ sub, today, earliest, cutoffHour }: { sub: SubData; today: string; earliest: string; cutoffHour: number }) {
+export default function SubscriptionCard({ sub, today, earliest, cutoffHour, holidays = [] }: { sub: SubData; today: string; earliest: string; cutoffHour: number; holidays?: { date: string; note: string }[] }) {
+  const holidayDates = holidays.map((h) => h.date);
   const [month, setMonth] = useState(today.slice(0, 7));
   const [picked, setPicked] = useState<string | null>(null);
   const [panel, setPanel] = useState<null | "pause" | "edit" | "cancel">(null);
@@ -36,7 +37,7 @@ export default function SubscriptionCard({ sub, today, earliest, cutoffHour }: {
   const lead = weekday(days[0]);
   const editable = (d: string) => d >= earliest;
 
-  const q = (d: string) => (d <= today ? sub.delivered[d]?.qty ?? 0 : qtyOn(sub, d, sub.overrides));
+  const q = (d: string) => (d <= today ? sub.delivered[d]?.qty ?? 0 : qtyOn(sub, d, sub.overrides, holidayDates));
   const monthTotal = days.filter((d) => d > today).reduce((t, d) => t + q(d), 0);
   const nextDelivery = Array.from({ length: 30 }, (_, i) => addDays(earliest, i)).find((d) => q(d) > 0);
 
@@ -155,29 +156,31 @@ export default function SubscriptionCard({ sub, today, earliest, cutoffHour }: {
             const past = d <= today;
             const n = q(d);
             const deliveredRow = sub.delivered[d];
-            const paused = !past && isPaused(sub, d);
-            const changed = !past && d in sub.overrides;
-            const canEdit = editable(d) && sub.status !== "CANCELLED";
+            const holiday = !past ? holidays.find((h) => h.date === d) : undefined;
+            const paused = !past && !holiday && isPaused(sub, d);
+            const changed = !past && !holiday && d in sub.overrides;
+            const canEdit = editable(d) && sub.status !== "CANCELLED" && !holiday;
             return (
               <button
                 key={d}
                 type="button"
                 disabled={!canEdit}
                 onClick={() => setPicked(picked === d ? null : d)}
+                title={holiday ? `No delivery${holiday.note ? `: ${holiday.note}` : ""}` : undefined}
                 className={cx(
                   "relative flex h-14 flex-col items-center justify-center rounded-xl border text-[13px] transition sm:h-[60px]",
                   d === today && "ring-2 ring-ink ring-offset-1",
-                  picked === d ? "border-ink bg-ink text-white" : paused ? "border-ghee/40 bg-ghee-soft" : n > 0 ? (past ? "border-transparent bg-tulsi-soft" : "border-tulsi/40 bg-white") : "border-transparent bg-malai",
+                  picked === d ? "border-ink bg-ink text-white" : holiday ? "border-clay/30 bg-clay-soft" : paused ? "border-ghee/40 bg-ghee-soft" : n > 0 ? (past ? "border-transparent bg-tulsi-soft" : "border-tulsi/40 bg-white") : "border-transparent bg-malai",
                   canEdit && picked !== d && "hover:border-ink/40",
                   !canEdit && !past && "cursor-not-allowed",
                 )}
               >
                 <span className={cx("font-semibold tabular-nums", picked !== d && !n && "text-ink-3")}>{Number(d.slice(8))}</span>
-                <span className={cx("text-[10.5px] font-bold", picked === d ? "text-white/80" : past ? "text-tulsi" : paused ? "text-ghee-deep" : n ? "text-tulsi" : "text-ink-3")}>
-                  {past ? (deliveredRow ? <span className="inline-flex items-center gap-0.5"><Check size={10} />{deliveredRow.qty}</span> : "") : paused ? "pause" : n ? `×${n}` : "off"}
+                <span className={cx("text-[10.5px] font-bold", picked === d ? "text-white/80" : past ? "text-tulsi" : holiday ? "text-clay" : paused ? "text-ghee-deep" : n ? "text-tulsi" : "text-ink-3")}>
+                  {past ? (deliveredRow ? <span className="inline-flex items-center gap-0.5"><Check size={10} />{deliveredRow.qty}</span> : "") : holiday ? "छुट्टी" : paused ? "pause" : n ? `×${n}` : "off"}
                 </span>
                 {changed && picked !== d && <span className="absolute right-1 top-1 h-1.5 w-1.5 rounded-full bg-ghee" title="Changed" />}
-                {!past && !canEdit && <Lock size={9} className="absolute left-1 top-1 text-ink-3" />}
+                {!past && !canEdit && !holiday && <Lock size={9} className="absolute left-1 top-1 text-ink-3" />}
               </button>
             );
           })}

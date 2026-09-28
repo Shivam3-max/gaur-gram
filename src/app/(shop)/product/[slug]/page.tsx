@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
-import { Star, FlaskConical, ArrowUpRight } from "lucide-react";
+import { Star, ArrowUpRight } from "lucide-react";
+import { Flask } from "@/components/folk/icons";
 import { db } from "@/lib/db";
 import { getProduct, getProducts } from "@/lib/catalog";
 import { parseJSON } from "@/lib/format";
@@ -108,7 +109,7 @@ export default async function ProductPage({ params }: { params: Params }) {
 
       {p.batches.length > 0 && (
         <section className="container-x pt-16">
-          <div className="flex items-center gap-2"><FlaskConical size={16} className="text-tulsi" /><span className="eyebrow">Recent batches</span></div>
+          <div className="flex items-center gap-2"><Flask size={17} className="text-tulsi" /><span className="eyebrow">Recent batches</span></div>
           <div className="mt-4 grid gap-3 sm:grid-cols-3">
             {p.batches.map((b) => (
               <Link key={b.id} href={`/trace/${b.code}`} className="group rounded-2xl border border-line bg-white p-5 transition hover:border-ink/20">

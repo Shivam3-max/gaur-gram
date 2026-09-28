@@ -6,7 +6,8 @@ import { db } from "@/lib/db";
 import { currentUser, endUserSession, startUserSession } from "@/lib/auth";
 import { getSettings, num } from "@/lib/settings";
 import { addDays, istNow } from "@/lib/dates";
-import { firstEditableDate, isEditable, planQty } from "@/lib/schedule";
+import { firstEditableDate, isEditable, nextDeliveryDate, planQty } from "@/lib/schedule";
+import { getHolidays } from "@/lib/holidays";
 import { walletEntry } from "@/lib/wallet";
 import { createRazorpayOrder, fetchRazorpayOrder, razorpayEnabled, razorpayKeyId, verifyRazorpaySignature } from "@/lib/razorpay";
 
@@ -143,7 +144,8 @@ export async function placeOrder(input: { lines: Line[]; addressId: string; paym
   for (const i of q.items) if (i.v.stock < i.qty) return { ok: false, error: `${i.v.product.name} (${i.v.label}) has only ${i.v.stock} left.` };
 
   const s = await getSettings();
-  const deliverOn = q.local ? firstEditableDate(num(s.cutoffHour)) : null;
+  const holidays = await getHolidays();
+  const deliverOn = q.local ? nextDeliveryDate(num(s.cutoffHour), holidays.set) : null;
   const now = istNow();
   const number = "GG" + now.date.replaceAll("-", "").slice(2) + String(randomInt(100, 1000)) + String(Date.now()).slice(-3);
 
@@ -230,6 +232,7 @@ export async function setDayQty(subscriptionId: string, date: string, qty: numbe
   const sub = await ownSub(subscriptionId);
   const s = await getSettings();
   if (!isEditable(date, num(s.cutoffHour))) return { ok: false, error: "This day is locked. Changes close at the nightly cut-off." };
+  if ((await getHolidays()).set.has(date)) return { ok: false, error: "There's no delivery on this day (delivery holiday)." };
   qty = Math.max(0, Math.min(10, Math.floor(qty)));
   if (qty === planQty(sub, date)) await db.dayOverride.deleteMany({ where: { subscriptionId, date } });
   else await db.dayOverride.upsert({ where: { subscriptionId_date: { subscriptionId, date } }, create: { subscriptionId, date, qty }, update: { qty } });
@@ -257,7 +260,7 @@ export async function resumeSubscription(subscriptionId: string): Promise<Result
 
 export async function cancelSubscription(subscriptionId: string): Promise<Result> {
   await ownSub(subscriptionId);
-  await db.subscription.update({ where: { id: subscriptionId }, data: { status: "CANCELLED" } });
+  await db.subscription.update({ where: { id: subscriptionId }, data: { status: "CANCELLED", cancelledAt: new Date() } });
   revalidatePath("/account");
   return { ok: true };
 }

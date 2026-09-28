@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { ChevronLeft, ChevronRight, CheckCircle2 } from "lucide-react";
+import { adminPage } from "@/lib/auth";
+import { ChevronLeft, ChevronRight, CheckCircle2, Printer } from "lucide-react";
 import { addDays, prettyDate, today as istToday } from "@/lib/dates";
 import { buildManifest, litres } from "@/lib/manifest";
 import { cx, rupees } from "@/lib/format";
@@ -9,10 +10,11 @@ import { Card, PageHead, Pill, btn, btnSm } from "@/components/admin/ui";
 export const metadata = { title: "Delivery manifest" };
 
 export default async function ManifestPage({ searchParams }: { searchParams: Promise<{ date?: string }> }) {
+  await adminPage("manifest");
   const today = istToday();
   const sp = await searchParams;
   const date = sp.date && /^\d{4}-\d{2}-\d{2}$/.test(sp.date) ? sp.date : addDays(today, 1);
-  const { stops, totals } = await buildManifest(date);
+  const { stops, totals, holiday } = await buildManifest(date);
   // One doorstep per customer and address, even when they have several plans or an order too
   const doors = Object.values(
     stops.reduce<Record<string, { id: string; city: string; stops: typeof stops }>>((m, s) => {
@@ -34,6 +36,8 @@ export default async function ManifestPage({ searchParams }: { searchParams: Pro
         <Link href={`/admin/manifest?date=${today}`} className={btnSm}>Today</Link>
         <Link href={`/admin/manifest?date=${addDays(today, 1)}`} className={btnSm}>Tomorrow</Link>
         <Link href={`/admin/manifest?date=${addDays(date, 1)}`} className={btnSm} aria-label="Next day"><ChevronRight size={15} /></Link>
+        <Link href={`/admin/print/route-sheet?date=${date}`} target="_blank" className={btnSm}><Printer size={14} /> Route sheet</Link>
+        <Link href={`/admin/print/packing-slips?date=${date}`} target="_blank" className={btnSm}><Printer size={14} /> Order slips</Link>
         {canDeliver && pendingCount > 0 && (
           <form action={markDelivered}>
             <input type="hidden" name="date" value={date} />
@@ -42,6 +46,11 @@ export default async function ManifestPage({ searchParams }: { searchParams: Pro
         )}
       </PageHead>
 
+      {holiday && (
+        <p className="mb-5 rounded-xl bg-clay-soft px-4 py-3 text-[13.5px] font-medium text-clay">
+          Delivery holiday{holiday.note ? `: ${holiday.note}` : ""}. Subscriptions are skipped; only one-time orders placed for this day are listed.
+        </p>
+      )}
       {!canDeliver && (
         <p className="mb-5 rounded-xl bg-ghee-soft px-4 py-3 text-[13.5px] text-ghee-deep">
           This is the production plan. Customers can still change {date === addDays(today, 1) ? "tomorrow" : "this day"} until the 10 PM cut-off, so totals may move until then.

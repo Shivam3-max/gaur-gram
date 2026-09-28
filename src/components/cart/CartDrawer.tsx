@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { useEffect } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { X, ChevronRight, Sunrise, Truck, Recycle } from "lucide-react";
+import { X, ChevronRight } from "lucide-react";
+import { Sunrise, Truck, Bottle } from "../folk/icons";
 import { useCart } from "./CartProvider";
 import AddButton from "./AddButton";
 import ProductVisual from "../ProductVisual";
@@ -117,7 +118,7 @@ export default function CartDrawer({ fees }: { fees: Fees }) {
                   )}
 
                   <div className="flex items-center gap-3 rounded-2xl bg-white p-4 text-[12.5px] text-ink-2">
-                    <Recycle size={18} className="shrink-0 text-tulsi" />
+                    <Bottle size={19} className="shrink-0 text-tulsi" />
                     Everything comes in glass or clay. Leave empty milk bottles out and our rider collects them.
                   </div>
                 </div>

@@ -1,7 +1,8 @@
 import Image from "next/image";
 import Link from "next/link";
 import type { Metadata } from "next";
-import { Sprout, HandHeart, Ban, Users, ArrowRight } from "lucide-react";
+import { ArrowRight } from "lucide-react";
+import { Hut, Cow, CowCalf, People } from "@/components/folk/icons";
 import { getSettings } from "@/lib/settings";
 import AutoVideo from "@/components/AutoVideo";
 import Reveal from "@/components/Reveal";
@@ -60,16 +61,16 @@ export default async function GoshalaPage() {
         <Frieze scenes={["grazing", "milking", "bilona", "cooking", "sowing", "kolhu", "bees"]} labels className="mx-auto mb-12 max-w-[1100px]" />
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {[
-            [Ban, "No middleman", "From our shed to your door. No distributor, no dairy co-op, no repacking."],
-            [Sprout, "Grazing, not feedlots", "Cows walk to pasture every day and eat green fodder grown on our land."],
-            [HandHeart, "Calves come first", "Calves drink their fill before we milk. We only take what's left."],
-            [Users, "Farmers paid directly", "Seeds for our oils and flowers for our bees come from families we know."],
+            [Hut, "No middleman", "From our shed to your door. No distributor, no dairy co-op, no repacking."],
+            [Cow, "Grazing, not feedlots", "Cows walk to pasture every day and eat green fodder grown on our land."],
+            [CowCalf, "Calves come first", "Calves drink their fill before we milk. We only take what's left."],
+            [People, "Farmers paid directly", "Seeds for our oils and flowers for our bees come from families we know."],
           ].map(([I, t, d], i) => {
-            const Icon = I as typeof Ban;
+            const Icon = I as typeof Hut;
             return (
               <Reveal key={t as string} delay={i * 0.06}>
                 <div className="h-full rounded-[24px] bg-white/80 p-6">
-                  <span className="grid h-11 w-11 place-items-center rounded-full bg-white text-ghee"><Icon size={20} /></span>
+                  <span className="grid h-11 w-11 place-items-center rounded-full bg-white text-ghee"><Icon size={24} /></span>
                   <h3 className="mt-4 text-[18px] font-semibold">{t as string}</h3>
                   <p className="mt-1.5 text-[14.5px] leading-relaxed text-ink-2">{d as string}</p>
                 </div>

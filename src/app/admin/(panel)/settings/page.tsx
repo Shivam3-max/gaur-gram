@@ -1,4 +1,5 @@
 import { getSettings } from "@/lib/settings";
+import { adminPage } from "@/lib/auth";
 import { saveSettings } from "../../actions";
 import MediaField from "@/components/admin/MediaField";
 import PasswordForm from "@/components/admin/PasswordForm";
@@ -7,6 +8,7 @@ import { Card, Field, PageHead, btn, input } from "@/components/admin/ui";
 export const metadata = { title: "Site settings" };
 
 export default async function SettingsPage() {
+  await adminPage("settings");
   const s = await getSettings();
   return (
     <>
@@ -34,6 +36,7 @@ export default async function SettingsPage() {
             <div className="grid gap-4 sm:grid-cols-2">
               <Field label="Nightly cut-off (24h hour)" hint="22 = 10 PM. After this, tomorrow is locked."><input name="cutoffHour" defaultValue={s.cutoffHour} inputMode="numeric" className={input} /></Field>
               <Field label="Bottle deposit ₹"><input name="bottleDeposit" defaultValue={s.bottleDeposit} className={input} /></Field>
+              <Field label="Low-stock alert at" hint="Sizes with this many or fewer left are flagged"><input name="lowStockAt" defaultValue={s.lowStockAt} inputMode="numeric" className={input} /></Field>
               <Field label="Tricity delivery fee ₹"><input name="deliveryFee" defaultValue={s.deliveryFee} className={input} /></Field>
               <Field label="Free Tricity delivery above ₹"><input name="freeDeliveryAbove" defaultValue={s.freeDeliveryAbove} className={input} /></Field>
               <Field label="Courier fee ₹"><input name="shipFee" defaultValue={s.shipFee} className={input} /></Field>

@@ -1,18 +1,21 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import type { Metadata } from "next";
-import { Package, MapPin, CheckCircle2, CalendarPlus, Recycle } from "lucide-react";
+import { Package, MapPin, CheckCircle2, CalendarPlus } from "lucide-react";
+import { Bottle } from "@/components/folk/icons";
 import { currentUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { labelTitle } from "@/lib/catalog";
 import { getSettings, num } from "@/lib/settings";
-import { today as istToday, addDays } from "@/lib/dates";
-import { firstEditableDate, qtyOn } from "@/lib/schedule";
+import { today as istToday, addDays, prettyDate } from "@/lib/dates";
+import { describePattern, firstEditableDate, qtyOn } from "@/lib/schedule";
+import { getHolidays } from "@/lib/holidays";
 import { ORDER_STATUS, cx, rupees } from "@/lib/format";
 import { razorpayEnabled } from "@/lib/razorpay";
 import SubscriptionCard, { type SubData } from "@/components/account/SubscriptionCard";
 import WalletCard from "@/components/account/WalletCard";
 import LogoutButton from "@/components/account/LogoutButton";
+import BottleFill from "@/components/delight/BottleFill";
 import Folk from "@/components/folk/Folk";
 
 export const metadata: Metadata = { title: "My account" };
@@ -27,6 +30,8 @@ export default async function AccountPage({ searchParams }: { searchParams: Prom
   const today = istToday();
   const earliest = firstEditableDate(cutoff);
 
+  const holidays = await getHolidays();
+  const upcomingHolidays = holidays.list.filter((h) => h.date >= today).map((h) => ({ date: h.date, note: h.note }));
   const [subs, orders, txns, addresses] = await Promise.all([
     db.subscription.findMany({
       where: { userId: user.id, status: { not: "CANCELLED" } },
@@ -53,7 +58,7 @@ export default async function AccountPage({ searchParams }: { searchParams: Prom
 
   // Average daily spend over the next week, for the "days left" estimate
   const week = Array.from({ length: 7 }, (_, i) => addDays(earliest, i));
-  const dailySpend = Math.round(subData.reduce((t, x) => t + week.reduce((w, d) => w + qtyOn(x, d, x.overrides) * x.unitPrice, 0), 0) / 7);
+  const dailySpend = Math.round(subData.reduce((t, x) => t + week.reduce((w, d) => w + qtyOn(x, d, x.overrides, holidays.set) * x.unitPrice, 0), 0) / 7);
 
   return (
     <div className="container-x py-10">
@@ -66,11 +71,14 @@ export default async function AccountPage({ searchParams }: { searchParams: Prom
         <LogoutButton />
       </div>
 
-      {subscribed && (
-        <p className="mt-6 flex items-center gap-2 rounded-2xl bg-tulsi-soft p-4 text-[14px] font-medium text-tulsi">
-          <CheckCircle2 size={18} /> Your subscription is set up. Keep your wallet topped up so deliveries don’t stop.
-        </p>
-      )}
+      {subscribed && (() => {
+        const x = subData.find((y) => y.id === subscribed);
+        return x ? (
+          <BottleFill product={x.product.name.toLowerCase()} detail={`${x.variantLabel} · ${describePattern(x)} · starts ${prettyDate(x.startDate, { weekday: "short", day: "numeric", month: "short" })}, ${x.slot}.`} />
+        ) : (
+          <p className="mt-6 flex items-center gap-2 rounded-2xl bg-tulsi-soft p-4 text-[14px] font-medium text-tulsi"><CheckCircle2 size={18} /> Your subscription is set up.</p>
+        );
+      })()}
 
       <a href="#wallet" className="mt-5 flex items-center justify-between rounded-2xl border border-line bg-white p-4 lg:hidden">
         <span>
@@ -82,6 +90,11 @@ export default async function AccountPage({ searchParams }: { searchParams: Prom
 
       <div className="mt-6 grid gap-6 sm:mt-8 lg:grid-cols-[1fr_380px] *:min-w-0">
         <div className="space-y-6">
+          {upcomingHolidays.filter((h) => h.date <= addDays(today, 14)).map((h) => (
+            <p key={h.date} className="rounded-2xl border border-clay/20 bg-clay-soft px-4 py-3 text-[13.5px] text-clay">
+              No deliveries on <b>{prettyDate(h.date, { weekday: "long", day: "numeric", month: "long" })}</b>{h.note ? ` (${h.note})` : ""}. Your plan skips it automatically and nothing is charged.
+            </p>
+          ))}
           <div className="flex items-center justify-between">
             <h2 className="font-display text-[30px]">Daily deliveries</h2>
             <Link href="/subscribe" className="flex items-center gap-1.5 text-[14px] font-semibold text-ghee-deep hover:underline"><CalendarPlus size={16} /> Add a product</Link>
@@ -94,7 +107,7 @@ export default async function AccountPage({ searchParams }: { searchParams: Prom
               <Link href="/subscribe" className="mt-5 inline-block rounded-xl bg-tulsi px-5 py-3 text-[14px] font-semibold text-white">Start a subscription</Link>
             </div>
           ) : (
-            subData.map((x) => <SubscriptionCard key={x.id} sub={x} today={today} earliest={earliest} cutoffHour={cutoff} />)
+            subData.map((x) => <SubscriptionCard key={x.id} sub={x} today={today} earliest={earliest} cutoffHour={cutoff} holidays={upcomingHolidays} />)
           )}
 
           <h2 className="pt-4 font-display text-[30px]">Orders</h2>
@@ -128,7 +141,7 @@ export default async function AccountPage({ searchParams }: { searchParams: Prom
             txns={txns.map((t) => ({ id: t.id, amount: t.amount, kind: t.kind, note: t.note, balance: t.balance, at: t.createdAt.toLocaleDateString("en-IN", { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" }) }))}
           />
           <section className="rounded-[26px] bg-malai p-5 sm:p-6">
-            <span className="eyebrow flex items-center gap-2"><Recycle size={13} /> Glass bottles</span>
+            <span className="eyebrow flex items-center gap-2"><Bottle size={15} /> Glass bottles</span>
             <p className="mt-2 font-display text-[34px] leading-none">{user.bottlesOut} <span className="font-sans text-[14px] text-ink-3">with you</span></p>
             <p className="mt-2 text-[13px] text-ink-2">Rinse and leave empties outside your door. Our rider picks them up with the next delivery.</p>
           </section>

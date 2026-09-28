@@ -42,6 +42,7 @@ model Product {
   ingredients String    @default("")
   shelfLife   String    @default("")
   storage     String    @default("")
+  gstRate     Int       @default(5) // % GST included in the price; confirm per product with your CA
   badge       String?
   rating      Float     @default(4.8)
   ratingCount Int       @default(0)
@@ -96,6 +97,7 @@ model Batch {
   lab        String   @default("")
   reportUrl  String?
   result     String   @default("PASS")
+  expiresOn  DateTime?
   notes      String   @default("")
   createdAt  DateTime @default(now())
 }
@@ -210,6 +212,8 @@ model Order {
   slot          String      @default("")
   deliverOn     String? // YYYY-MM-DD for Tricity rider deliveries
   note          String      @default("")
+  source        String      @default("WEB") // WEB | PHONE
+  createdBy     String? // staff name for phone orders
   createdAt     DateTime    @default(now())
   items         OrderItem[]
 }
@@ -242,6 +246,7 @@ model Subscription {
   status    String     @default("ACTIVE") // ACTIVE | PAUSED | CANCELLED
   pauseFrom String?
   pauseTo   String?
+  cancelledAt DateTime?
   createdAt DateTime   @default(now())
   overrides DayOverride[]
   deliveries Delivery[]
@@ -293,6 +298,40 @@ model Admin {
   email     String   @unique
   name      String
   password  String
-  role      String   @default("SUPER") // SUPER | OPS | CONTENT
+  role      String   @default("OWNER") // OWNER | OPS | CONTENT (legacy SUPER = OWNER)
+  createdAt DateTime @default(now())
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  adminId   String?
+  adminName String
+  action    String
+  target    String   @default("")
+  detail    String   @default("")
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+}
+
+/// Days with no morning delivery (e.g. Diwali). Subscriptions skip them automatically.
+model Holiday {
+  date String @id // YYYY-MM-DD
+  note String @default("")
+}
+
+model Banner {
+  id        String   @id @default(cuid())
+  placement String   @default("HOME") // HOME = promo card on the homepage, BAR = replaces the announcement bar
+  title     String
+  subtitle  String   @default("")
+  cta       String   @default("")
+  href      String   @default("")
+  image     String?
+  tone      String   @default("ghee") // ghee | tulsi | clay | ink
+  startsOn  String? // YYYY-MM-DD, inclusive
+  endsOn    String? // YYYY-MM-DD, inclusive
+  active    Boolean  @default(true)
+  sort      Int      @default(0)
   createdAt DateTime @default(now())
 }

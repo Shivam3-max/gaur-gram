@@ -1,4 +1,5 @@
 import { db } from "@/lib/db";
+import { adminPage } from "@/lib/auth";
 import { rupees } from "@/lib/format";
 import { adjustWallet } from "../../actions";
 import { Card, PageHead, Table, btnSm, input, td } from "@/components/admin/ui";
@@ -6,6 +7,7 @@ import { Card, PageHead, Table, btnSm, input, td } from "@/components/admin/ui";
 export const metadata = { title: "Customers" };
 
 export default async function CustomersPage({ searchParams }: { searchParams: Promise<{ q?: string }> }) {
+  await adminPage("customers");
   const { q = "" } = await searchParams;
   const users = await db.user.findMany({
     where: q ? { OR: [{ name: { contains: q, mode: "insensitive" } }, { phone: { contains: q, mode: "insensitive" } }, { email: { contains: q, mode: "insensitive" } }] } : {},

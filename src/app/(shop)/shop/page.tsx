@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { Metadata } from "next";
-import { Sunrise, Truck, SearchX } from "lucide-react";
+import { SearchX } from "lucide-react";
+import { Sunrise, Truck } from "@/components/folk/icons";
 import { getCategories, getProducts } from "@/lib/catalog";
 import PackShot from "@/components/PackShot";
 import ProductCard from "@/components/ProductCard";
@@ -83,8 +84,8 @@ export default async function ShopPage({ searchParams }: { searchParams: SP }) {
                 ["ship", "Ships India-wide"],
               ].map(([k, l]) => (
                 <Link key={l} href={href({ d: k })} className={cx("flex shrink-0 items-center gap-1.5 rounded-full border px-3.5 py-1.5 font-medium", d === k ? "border-tulsi bg-tulsi-soft text-tulsi" : "border-line text-ink-2 hover:border-ink/30")}>
-                  {k === "fresh" && <Sunrise size={14} />}
-                  {k === "ship" && <Truck size={14} />}
+                  {k === "fresh" && <Sunrise size={15} />}
+                  {k === "ship" && <Truck size={15} />}
                   {l}
                 </Link>
               ))}

@@ -1,16 +1,19 @@
 import Link from "next/link";
+import { adminPage } from "@/lib/auth";
 import type { Prisma } from "@prisma/client";
 import { db } from "@/lib/db";
 import { ORDER_STATUS, cx, parseJSON, rupees } from "@/lib/format";
 import { setOrderStatus } from "../../actions";
-import { Card, PageHead, Pill, btnSm, input } from "@/components/admin/ui";
+import { Phone, Printer } from "lucide-react";
+import { Card, PageHead, Pill, btn, btnGhost, btnSm, input } from "@/components/admin/ui";
 
 export const metadata = { title: "Orders" };
 
 const FILTERS = [["", "All"], ["open", "To fulfil"], ["DELIVERED", "Delivered"], ["CANCELLED", "Cancelled"]] as const;
 
-export default async function OrdersPage({ searchParams }: { searchParams: Promise<{ s?: string; q?: string }> }) {
-  const { s = "", q = "" } = await searchParams;
+export default async function OrdersPage({ searchParams }: { searchParams: Promise<{ s?: string; q?: string; created?: string }> }) {
+  await adminPage("orders");
+  const { s = "", q = "", created } = await searchParams;
   const where: Prisma.OrderWhereInput = {};
   if (s === "open") where.status = { in: ["PLACED", "CONFIRMED", "PACKED", "SHIPPED", "OUT_FOR_DELIVERY"] };
   else if (s) where.status = s;
@@ -24,7 +27,10 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
           {s && <input type="hidden" name="s" value={s} />}
           <input name="q" defaultValue={q} placeholder="Order no., phone or name" className={`${input} w-64`} />
         </form>
+        <Link href="/admin/print/packing-slips" target="_blank" className={btnGhost}><Printer size={15} /> Slips for open orders</Link>
+        <Link href="/admin/orders/new" className={btn}><Phone size={15} /> New phone order</Link>
       </PageHead>
+      {created && <p className="mb-4 rounded-xl bg-tulsi-soft px-4 py-3 text-[13.5px] font-medium text-tulsi">Phone order created. It’s on the manifest for its delivery day.</p>}
       <div className="mb-4 flex flex-wrap gap-2">
         {FILTERS.map(([k, l]) => (
           <Link key={k} href={`/admin/orders${k ? `?s=${k}` : ""}`} className={cx("rounded-full px-3.5 py-1.5 text-[13px] font-medium", s === k ? "bg-ink text-white" : "bg-white text-ink-2 ring-1 ring-line hover:bg-malai")}>{l}</Link>
@@ -52,7 +58,9 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
                   <div className="flex flex-wrap gap-1.5">
                     <Pill tone={o.paymentStatus === "PAID" ? "good" : "info"}>{o.payment} · {o.paymentStatus.toLowerCase()}</Pill>
                     <Pill tone="neutral">{o.slot}</Pill>
+                    {o.source === "PHONE" && <Pill tone="warn">Phone{o.createdBy ? ` · ${o.createdBy}` : ""}</Pill>}
                   </div>
+                  <Link href={`/admin/print/packing-slips?ids=${o.id}`} target="_blank" className="inline-flex items-center gap-1 text-[12px] font-semibold text-ghee-deep hover:underline"><Printer size={12} /> Packing slip</Link>
                 </div>
                 <form action={setOrderStatus} className="flex items-center gap-2">
                   <input type="hidden" name="id" value={o.id} />

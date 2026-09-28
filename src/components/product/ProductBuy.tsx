@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { Play, Sunrise, Truck, Recycle, ShieldCheck, CalendarDays, MapPin } from "lucide-react";
+import { Play, MapPin } from "lucide-react";
+import { Sunrise, Truck, Bottle, Shield, Calendar } from "../folk/icons";
 import type { CardProduct } from "@/lib/catalog";
 import { cx, pct, rupees } from "@/lib/format";
 import ProductVisual from "../ProductVisual";
@@ -119,7 +120,7 @@ export default function ProductBuy({ p, tint, gallery, video }: { p: CardProduct
         {p.subscribable && (
           <Link href={`/subscribe?product=${p.slug}&variant=${v.id}`} className="mt-4 flex items-center justify-between gap-4 rounded-2xl bg-tulsi-soft p-4 transition hover:bg-[#dde9d6]">
             <span className="flex items-center gap-3">
-              <span className="grid h-10 w-10 place-items-center rounded-xl bg-white text-tulsi"><CalendarDays size={18} /></span>
+              <span className="grid h-10 w-10 place-items-center rounded-xl bg-white text-tulsi"><Calendar size={19} /></span>
               <span>
                 <b className="block text-[15px] text-tulsi-deep">Get it every morning</b>
                 <span className="text-[13px] text-ink-2">Subscribe and pay {rupees(v.subPrice ?? v.price)} per {v.label}. Skip or pause any day.</span>
@@ -151,8 +152,8 @@ export default function ProductBuy({ p, tint, gallery, video }: { p: CardProduct
               </button>
             </span>
           </li>
-          <li className="flex items-start gap-3"><Recycle size={18} className="mt-0.5 text-tulsi" /><span>{p.pack === "kulhad" ? "Served in a clay kulhad." : p.pack === "matka" ? "Set in an unglazed clay matka." : fresh ? "Returnable glass. Leave empties out and we collect them." : "Sealed in glass, packed in moulded paper."}</span></li>
-          <li className="flex items-start gap-3"><ShieldCheck size={18} className="mt-0.5 text-tulsi" /><span>Every batch lab-tested. <Link href="/lab-reports" className="font-semibold text-ghee-deep hover:underline">See reports</Link></span></li>
+          <li className="flex items-start gap-3"><Bottle size={19} className="mt-0.5 text-tulsi" /><span>{p.pack === "kulhad" ? "Served in a clay kulhad." : p.pack === "matka" ? "Set in an unglazed clay matka." : fresh ? "Returnable glass. Leave empties out and we collect them." : "Sealed in glass, packed in moulded paper."}</span></li>
+          <li className="flex items-start gap-3"><Shield size={19} className="mt-0.5 text-tulsi" /><span>Every batch lab-tested. <Link href="/lab-reports" className="font-semibold text-ghee-deep hover:underline">See reports</Link></span></li>
         </ul>
       </div>
     </div>

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ShieldCheck, Recycle, FlaskConical, Sunrise } from "lucide-react";
+import { Shield, Bottle, Flask, Sunrise } from "../folk/icons";
 import Logo from "../Logo";
 import { Frieze } from "../folk/Folk";
 import type { Settings } from "@/lib/settings";
@@ -21,14 +21,14 @@ export default function Footer({ s }: { s: Settings }) {
       <div className="container-x grid grid-cols-2 gap-x-3 gap-y-5 border-b border-line py-8 lg:grid-cols-4 lg:gap-4">
         {[
           [Sunrise, "Milked at 4 AM", "At your door by 7 in the Tricity"],
-          [Recycle, "Glass, never plastic", "Returnable bottles, clay kulhads"],
-          [FlaskConical, "Lab-tested batches", "Every report published online"],
-          [ShieldCheck, "FSSAI licensed", `Lic. No. ${s.fssai}`],
+          [Bottle, "Glass, never plastic", "Returnable bottles, clay kulhads"],
+          [Flask, "Lab-tested batches", "Every report published online"],
+          [Shield, "FSSAI licensed", `Lic. No. ${s.fssai}`],
         ].map(([Icon, t, d]) => {
           const I = Icon as typeof Sunrise;
           return (
             <div key={t as string} className="flex items-start gap-2.5 sm:items-center sm:gap-3">
-              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-white text-ghee sm:h-11 sm:w-11"><I size={18} /></span>
+              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-white text-ghee sm:h-11 sm:w-11"><I size={20} /></span>
               <span>
                 <b className="block text-[13px] font-semibold sm:text-[14px]">{t as string}</b>
                 <span className="block break-words text-[12px] text-ink-3 sm:text-[13px]">{d as string}</span>

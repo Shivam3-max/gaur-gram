@@ -1,4 +1,5 @@
 import { Star } from "lucide-react";
+import { adminPage } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { moderateReview } from "../../actions";
 import { Card, PageHead, Pill, btnSm } from "@/components/admin/ui";
@@ -6,6 +7,7 @@ import { Card, PageHead, Pill, btnSm } from "@/components/admin/ui";
 export const metadata = { title: "Reviews" };
 
 export default async function ReviewsPage() {
+  await adminPage("reviews");
   const reviews = await db.review.findMany({ include: { product: true }, orderBy: [{ approved: "asc" }, { createdAt: "desc" }] });
   const pending = reviews.filter((r) => !r.approved).length;
   return (

@@ -2,7 +2,8 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Wallet, ArrowDownLeft, ArrowUpRight } from "lucide-react";
+import { ArrowDownLeft, ArrowUpRight } from "lucide-react";
+import { Potli } from "../folk/icons";
 import { confirmTopUp, startTopUp } from "@/app/actions";
 import { openRazorpay } from "../razorpay";
 import { cx, rupees } from "@/lib/format";
@@ -45,7 +46,7 @@ export default function WalletCard({ balance, dailySpend, txns, live }: { balanc
     <section className="rounded-[26px] border border-line bg-white p-5 sm:p-6">
       <div className="flex items-start justify-between">
         <div>
-          <span className="eyebrow flex items-center gap-2"><Wallet size={13} /> Gaurgram wallet</span>
+          <span className="eyebrow flex items-center gap-2"><Potli size={15} /> Gaurgram wallet</span>
           <p className={cx("mt-2 font-display text-[48px] leading-none tabular-nums", balance < 0 && "text-clay")}>{rupees(balance)}</p>
           <p className="mt-1.5 text-[13px] text-ink-3">
             {days === null ? "No daily deliveries scheduled" : days < 3 ? <span className="font-semibold text-clay">Low balance: about {days} {days === 1 ? "day" : "days"} left</span> : <>Covers about {days} days of deliveries</>}
